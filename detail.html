@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${p} != null ? p.address : 'Объявление'">Объявление</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; color:#0f172a; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+        .card { background:#fff; border:1px solid #dbeafe; border-radius:8px; }
+        .gallery { width:100%; background:#eff6ff; display:flex; gap:8px; overflow:auto; padding:8px; border-bottom:1px solid #dbeafe; }
+        .gallery img { height:320px; border-radius:6px; object-fit:cover; }
+        .gallery.single { justify-content:center; }
+        .gallery.single img { width:100%; height:auto; max-height:520px; }
+        .content { padding:16px; display:grid; gap:14px; }
+        .title { font-size:22px; font-weight:700; }
+        .price { font-size:18px; font-weight:700; color:#0f172a; }
+        .grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+        .row { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px; }
+        .label { color:#475569; font-size:12px; }
+        .value { color:#0f172a; font-weight:600; }
+        .back { display:inline-block; margin-top:8px; color:#2563eb; text-decoration:none; }
+        .author-info { font-size:13px; color:#64748b; margin-top:8px; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; display:flex; align-items:center; gap:6px; }
+        .author-info .author-name { font-weight:600; color:#334155; }
+        .author-info .author-badge { padding:3px 8px; border-radius:4px; background:#dbeafe; color:#1e40af; font-size:11px; }
+        .admin-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+        .btn-xs { padding:6px 12px; border-radius:6px; border:1px solid #e2e8f0; background:#fff; color:#334155; font-size:12px; cursor:pointer; text-decoration:none; display:inline-block; }
+        .btn-xs.danger { border-color:#fecaca; color:#b91c1c; }
+        .btn-xs:hover { background:#eff6ff; }
+        .btn-xs.danger:hover { background:#fef2f2; }
+        .chat-btn { padding:8px 16px; border-radius:6px; background:#2563eb; color:#fff; border:none; cursor:pointer; font-size:14px; margin-top:8px; }
+        .chat-btn:hover { background:#1e40af; }
+        @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container" th:if="${notFound}">
+    <div class="card" style="padding:16px;">
+        <div class="title">Объявление не найдено</div>
+        <div class="label">ID: <span th:text="${id}"></span></div>
+        <a th:href="@{/properties}" class="back">← К списку</a>
+    </div>
+</div>
+
+<div class="container" th:if="${p} != null">
+    <div class="card">
+        <div class="gallery" th:classappend="${p.imageUrlList != null and p.imageUrlList.size() == 1} ? ' single' : ''">
+            <img th:each="img : ${p.imageUrlList}"
+                 th:src="${img}" alt="photo" />
+            <img th:if="${#lists.isEmpty(p.imageUrlList)}" src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop" alt="placeholder" />
+        </div>
+        <div class="content">
+            <div class="title">
+                <span th:text="${p.address}">Адрес</span>
+                <span th:if="${p.status != null && p.status.toString() == 'sold'}" style="margin-left:8px; padding:4px 8px; border-radius:999px; background:#ecfdf5; color:#065f46; font-size:12px; border:1px solid #a7f3d0;">Продано</span>
+                <span th:if="${p.status != null && p.status.toString() == 'archived'}" style="margin-left:8px; padding:4px 8px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; border:1px solid #cbd5e1;">Архив</span>
+            </div>
+            <div class="price" th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT') + ' ₽'}">Цена</div>
+
+            <div class="grid">
+                <div class="row"><div class="label">Тип</div><div class="value" th:text="${p.type}">—</div></div>
+                <div class="row"><div class="label">Рынок</div><div class="value" th:text="${p.category}">—</div></div>
+                <div class="row"><div class="label">Комнат</div><div class="value" th:text="${p.rooms != null ? p.rooms : '—'}">—</div></div>
+                <div class="row"><div class="label">Площадь</div><div class="value" th:text="${p.area != null ? p.area + ' м²' : '—'}">—</div></div>
+                <div class="row"><div class="label">Этаж/Этажность</div><div class="value" th:text="${(p.floor != null ? p.floor : '—') + ' / ' + (p.floorsTotal != null ? p.floorsTotal : '—')}">—</div></div>
+                <div class="row"><div class="label">Город</div><div class="value" th:text="${p.city != null ? p.city : '—'}">—</div></div>
+                <div class="row"><div class="label">Район</div><div class="value" th:text="${p.district != null ? p.district : '—'}">—</div></div>
+            </div>
+
+            <div class="row" style="border:1px solid #e2e8f0; background:#fff;">
+                <div class="label">Описание</div>
+                <div class="value" th:text="${p.description != null && !#strings.isEmpty(p.description) ? p.description : '—'}">—</div>
+            </div>
+
+            <div class="author-info" th:if="${p.user != null}">
+                <span>Автор объявления:</span>
+                <span class="author-name" th:text="${p.user.firstName != null ? p.user.firstName + ' ' + (p.user.lastName != null ? p.user.lastName : '') : p.user.email}">Имя пользователя</span>
+                <span class="author-badge" th:if="${p.realtor != null}">Риелтор</span>
+            </div>
+
+            <div class="admin-actions" sec:authorize="isAuthenticated()"
+                 th:attr="data-id=${p.id}, data-type=${p.type}, data-category=${p.category}, data-address=${p.address}, data-city=${p.city}, data-district=${p.district}, data-area=${p.area}, data-rooms=${p.rooms}, data-floor=${p.floor}, data-floors=${p.floorsTotal}, data-price=${p.price}, data-imageUrls=${p.imageUrls}, data-description=${p.description}, data-promoted=${p.promoted}, data-status=${p.status}">
+                <button class="btn-xs" onclick="openPropertyModalFromDetail(this);" 
+                        sec:authorize="hasRole('ROLE_ADMIN')">Редактировать</button>
+                <button class="btn-xs" onclick="openPropertyModalFromDetail(this);" 
+                        th:if="${isOwner}" sec:authorize="!hasRole('ROLE_ADMIN')">Редактировать</button>
+                <button class="btn-xs danger" onclick="deletePropertyFromDetail(this);" 
+                        sec:authorize="hasRole('ROLE_ADMIN')">Удалить</button>
+                <button class="btn-xs danger" onclick="deletePropertyFromDetail(this);" 
+                        th:if="${isOwner}" sec:authorize="!hasRole('ROLE_ADMIN')">Удалить</button>
+                <button class="btn-xs" th:classappend="${p.promoted} ? 'promoted-btn' : ''" 
+                        onclick="togglePromote(this);" 
+                        sec:authorize="hasAnyRole('ADMIN', 'REALTOR')"
+                        th:text="${p.promoted} ? 'Снять продвижение' : 'Продвинуть'">Продвинуть</button>
+                <button class="btn-xs" th:classappend="${p.promoted} ? 'promoted-btn' : ''" 
+                        onclick="togglePromote(this);" 
+                        th:if="${isOwner}"
+                        sec:authorize="!hasAnyRole('ADMIN', 'REALTOR')"
+                        th:text="${p.promoted} ? 'Снять продвижение' : 'Продвинуть'">Продвинуть</button>
+                <button class="btn-xs" th:attr="data-status=${p.status}" 
+                        onclick="toggleArchiveDetail(this);"
+                        sec:authorize="hasRole('ROLE_ADMIN')"
+                        th:text="${p.status != null and p.status.toString() == 'archived' ? 'Вернуть из архива' : 'Архивировать'}">Архивировать</button>
+                <button class="btn-xs" th:attr="data-status=${p.status}"
+                        onclick="toggleArchiveDetail(this);"
+                        th:if="${isOwner}"
+                        sec:authorize="!hasRole('ROLE_ADMIN')"
+                        th:text="${p.status != null and p.status.toString() == 'archived' ? 'Вернуть из архива' : 'Архивировать'}">Архивировать</button>
+            </div>
+
+            <button class="chat-btn" sec:authorize="isAuthenticated()" onclick="openChat(this);" th:attr="data-property-id=${p.id}" th:if="${!isOwner}">Связаться</button>
+
+            <a th:if="${from != null and from == 'list'}" th:href="@{/properties}" class="back">← К списку</a>
+            <a th:unless="${from != null and from == 'list'}" th:href="@{/}" class="back">← На главную</a>
+        </div>
+    </div>
+</div>
+
+<script sec:authorize="isAuthenticated()">
+    function openPropertyModalFromDetail(button) {
+        const container = button.closest('.admin-actions');
+        const id = container.getAttribute('data-id');
+        if (!id) {
+            alert('Ошибка: ID объявления не найден');
+            return;
+        }
+    
+    async function toggleArchiveDetail(btn) {
+        try {
+            if (!btn) return;
+            const container = btn.closest('.admin-actions');
+            const id = container ? container.getAttribute('data-id') : null;
+            const status = btn.getAttribute('data-status');
+            if (!id) { alert('ID объявления не найден'); return; }
+            const archived = (status === 'archived');
+            const url = archived ? `/v1/api/properties/${id}/unarchive` : `/v1/api/properties/${id}/archive`;
+            const res = await fetch(url, { method: 'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', cache:'no-store' });
+            if (!res.ok) { alert('Не удалось изменить архивный статус'); return; }
+            const saved = await res.json().catch(()=>({}));
+            if (saved && saved.status) {
+                btn.textContent = (saved.status === 'archived') ? 'Вернуть из архива' : 'Архивировать';
+                btn.setAttribute('data-status', saved.status);
+            }
+            // Обновим бейдж статуса, перезагрузив страницу
+            window.location.reload();
+        } catch(e) { alert('Ошибка сети'); }
+    }
+        
+        // Перенаправляем на главную страницу с параметром edit
+        // Модальное окно откроется автоматически при загрузке страницы
+        window.location.href = '/?edit=' + id;
+    }
+    
+    function deletePropertyFromDetail(button) {
+        if (!confirm('Удалить объявление?')) return;
+        const container = button.closest('.admin-actions');
+        const id = container.getAttribute('data-id');
+        fetch('/v1/api/properties/' + id, { method: 'DELETE' })
+            .then(res => {
+                if (!res.ok) { alert('Не удалось удалить'); return; }
+                alert('Удалено');
+                window.location.href = '/';
+            });
+    }
+    
+    function togglePromote(button) {
+        const container = button.closest('.admin-actions');
+        const propertyId = container.getAttribute('data-id');
+        const isPromoted = button.textContent.trim() === 'Снять продвижение';
+        const endpoint = isPromoted ? `/v1/api/properties/${propertyId}/unpromote` : `/v1/api/properties/${propertyId}/promote`;
+        fetch(endpoint, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) { alert('Не удалось изменить продвижение'); return; }
+                button.textContent = isPromoted ? 'Продвинуть' : 'Снять продвижение';
+                button.classList.toggle('promoted-btn');
+            });
+    }
+    
+    function openChat(button) {
+        const propertyId = button.getAttribute('data-property-id');
+        window.location.href = '/chat?propertyId=' + propertyId;
+    }
+</script>
+</body>
+</html>

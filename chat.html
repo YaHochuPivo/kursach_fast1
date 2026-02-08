@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат по объявлению</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; color:#0f172a; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; margin-bottom:16px; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .back { color:#2563eb; text-decoration:none; }
+        .chat-header { background:#eff6ff; padding:12px; border-radius:8px; margin-bottom:16px; }
+        .chat-header h2 { margin:0 0 8px; font-size:18px; color:#0f172a; line-height:1.5; }
+        .chat-header h2 .property-link { color:#2563eb; text-decoration:none; font-weight:700; transition:color 0.2s; border-bottom:1px dotted #2563eb; }
+        .chat-header h2 .property-link:hover { color:#1e40af; border-bottom-color:#1e40af; text-decoration:none; }
+        .chat-header p { margin:0; color:#64748b; font-size:14px; }
+        .messages { height:500px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-bottom:16px; background:#f8fafc; }
+        .message { margin-bottom:16px; display:flex; gap:12px; }
+        .message.own { flex-direction:row-reverse; }
+        .message-avatar { width:40px; height:40px; border-radius:50%; background:#2563eb; color:#fff; display:grid; place-items:center; font-weight:600; flex-shrink:0; }
+        .message-content { flex:1; max-width:70%; }
+        .message-bubble { padding:10px 14px; border-radius:12px; background:#fff; border:1px solid #e2e8f0; }
+        .message.own .message-bubble { background:#2563eb; color:#fff; border-color:#2563eb; }
+        .message-author { font-size:12px; color:#64748b; margin-bottom:4px; }
+        .message.own .message-author { text-align:right; }
+        .message-text { margin:0; word-wrap:break-word; }
+        .message-time { font-size:11px; color:#94a3b8; margin-top:4px; }
+        .message.own .message-time { text-align:right; }
+        .message-read { font-size:10px; color:#64748b; margin-top:2px; font-style:italic; }
+        .message.own .message-read { text-align:right; }
+        .input-area { display:flex; gap:8px; }
+        .input-area input { flex:1; padding:12px; border:1px solid #e2e8f0; border-radius:8px; }
+        .input-area button { padding:12px 24px; border:none; border-radius:8px; background:#2563eb; color:#fff; cursor:pointer; font-weight:600; }
+        .input-area button:hover { background:#1e40af; }
+        .input-area button:disabled { background:#94a3b8; cursor:not-allowed; }
+        /* Модальное окно для просмотра карточки недвижимости */
+        .property-view-modal { position: fixed; inset:0; background: rgba(15,23,42,.7); display:none; align-items:center; justify-content:center; z-index:10000; overflow-y:auto; padding:20px; }
+        .property-view-modal.open { display:flex; }
+        .property-view-card { width: 900px; max-width: calc(100% - 40px); background:#fff; border-radius:8px; border:1px solid #e2e8f0; overflow:hidden; position:relative; margin:auto; }
+        .property-view-gallery { width:100%; background:#eff6ff; display:flex; gap:8px; overflow:auto; padding:8px; border-bottom:1px solid #dbeafe; }
+        .property-view-gallery img { height:320px; border-radius:6px; object-fit:cover; flex-shrink:0; }
+        .property-view-gallery.single { justify-content:center; }
+        .property-view-gallery.single img { width:100%; height:auto; max-height:520px; }
+        .property-view-content { padding:20px; }
+        .property-view-title { font-size:24px; font-weight:700; margin:0 0 12px; color:#0f172a; }
+        .property-view-price { font-size:20px; font-weight:700; color:#0f172a; margin:0 0 20px; }
+        .property-view-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; margin:20px 0; }
+        .property-view-row { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; }
+        .property-view-label { color:#475569; font-size:13px; margin-bottom:4px; }
+        .property-view-value { color:#0f172a; font-weight:600; font-size:14px; }
+        .property-view-description { background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin:20px 0; }
+        .property-view-author { font-size:14px; color:#64748b; margin-top:16px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; display:flex; align-items:center; gap:8px; }
+        .property-view-author-name { font-weight:600; color:#334155; }
+        .property-view-author-badge { padding:3px 8px; border-radius:4px; background:#dbeafe; color:#1e40af; font-size:11px; }
+        .property-view-close { position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:50%; background:#fff; border:1px solid #e2e8f0; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; color:#64748b; z-index:10; }
+        .property-view-close:hover { background:#f8fafc; }
+        .property-view-chat-btn { padding:10px 20px; border-radius:6px; background:#2563eb; color:#fff; border:none; cursor:pointer; font-size:14px; margin-top:12px; }
+        .property-view-chat-btn:hover { background:#1e40af; }
+        /* Новые стили для улучшенной карточки */
+        .property-view-key-features { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin:20px 0; }
+        .property-view-key-feature { display:flex; align-items:center; gap:8px; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; }
+        .property-view-key-feature-icon { font-size:20px; }
+        .property-view-key-feature-text { display:flex; flex-direction:column; }
+        .property-view-key-feature-label { font-size:11px; color:#64748b; }
+        .property-view-key-feature-value { font-size:14px; font-weight:600; color:#0f172a; }
+        .property-view-section { margin:24px 0; }
+        .property-view-section-title { font-size:18px; font-weight:700; color:#0f172a; margin:0 0 16px; }
+        .property-view-section-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+        .property-view-utilities { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin:16px 0; }
+        .property-view-utility { display:flex; justify-content:space-between; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; }
+        .property-view-utility-label { font-size:13px; color:#475569; }
+        .property-view-utility-value { font-size:13px; font-weight:600; color:#0f172a; }
+        .property-view-amenities { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+        .property-view-amenity { padding:6px 12px; background:#eff6ff; color:#1e40af; border-radius:999px; font-size:12px; }
+        .chats-badge { display:inline-block; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:#ef4444; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; margin-left:6px; }
+        @media (max-width: 860px) { .property-view-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <div class="brand">
+                <div class="logo">🏠</div>
+                <div>RealEstate</div>
+            </div>
+            <a th:href="@{/chats}" class="back" id="chats-link">
+                ← К чатам
+                <span id="chats-badge" class="chats-badge" style="display:none;">0</span>
+            </a>
+        </div>
+
+        <div class="chat-header">
+            <h2>Чат по объявлению: 
+                <a href="javascript:void(0);" class="property-link" th:onclick="|openPropertyView(${property.id})|">
+                    <span th:text="${property.address}">Адрес</span>
+                    <span th:if="${property.city != null and !property.city.isEmpty()}" th:text="|, ${property.city}|">, Город</span>
+                    <span th:if="${property.rooms != null}" th:text="| · ${property.rooms} комн|"> · Комнаты</span>
+                    <span th:if="${property.price != null}" th:text="| · ${#numbers.formatDecimal(property.price, 0, 'COMMA', 0, 'POINT')} ₽|"> · Цена</span>
+                </a>
+            </h2>
+            <p th:text="|С ${otherUser.firstName != null ? otherUser.firstName + ' ' + (otherUser.lastName != null ? otherUser.lastName : '') : otherUser.email}|">С пользователем</p>
+        </div>
+
+        <div id="messages" class="messages">
+            <div th:each="msg : ${messages}" class="message" th:classappend="${msg.user.id == currentUser.id} ? 'own' : ''">
+                <div class="message-avatar" th:text="${#strings.substring(msg.user.firstName != null ? msg.user.firstName : msg.user.email, 0, 1).toUpperCase()}">U</div>
+                <div class="message-content">
+                    <div class="message-author" th:text="${msg.user.firstName != null ? msg.user.firstName + ' ' + (msg.user.lastName != null ? msg.user.lastName : '') : msg.user.email}">Автор</div>
+                    <div class="message-bubble">
+                        <p class="message-text" th:text="${msg.messageText}">Сообщение</p>
+                    </div>
+                    <div class="message-time" th:text="${#temporals.format(msg.sentDate, 'dd.MM.yyyy HH:mm')}">Время</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." />
+            <button onclick="sendMessage()" id="sendBtn">Отправить</button>
+            <button th:if="${chat != null and currentUser != null and chat.seller != null and chat.seller.id == currentUser.id}"
+                    onclick="sendContract()" id="sendContractBtn" style="background:#0f172a">Отправить договор</button>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const chatId = /*[[${chat.id}]]*/ 0;
+        const currentUserId = /*[[${currentUser.id}]]*/ 0;
+        const isNewEmptyChat = /*[[${isNewEmptyChat != null ? isNewEmptyChat : false}]]*/ false;
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        let hasMessages = /*[[${messages != null && !messages.isEmpty()}]]*/ false;
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            sendBtn.disabled = true;
+            fetch(`/v1/api/chat/${chatId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messageText: text })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    return res.text().then(text => {
+                        throw new Error('Ошибка отправки: ' + res.status + ' - ' + text);
+                    });
+                }
+                return res.json();
+            })
+            .then(data => {
+                messageInput.value = '';
+                hasMessages = true; // Отмечаем, что в чате есть сообщения
+                loadMessages(true); // Принудительно прокручиваем вниз при отправке сообщения
+            })
+            .catch(err => {
+                console.error('Ошибка отправки сообщения:', err);
+                alert('Не удалось отправить сообщение: ' + err.message);
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+            });
+        }
+
+        function sendContract() {
+            const btn = document.getElementById('sendContractBtn');
+            if (btn) btn.disabled = true;
+            fetch(`/v1/api/chat/${chatId}/send-contract`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().catch(() => ({})).then(data => { throw new Error(data.error || 'Ошибка отправки договора'); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    alert('Ссылка на договор отправлена в чат');
+                    loadMessages(true);
+                })
+                .catch(err => {
+                    alert(err.message);
+                })
+                .finally(() => { if (btn) btn.disabled = false; });
+        }
+
+        let lastMessageCount = 0;
+        let shouldScrollToBottom = true;
+        
+        function loadMessages(forceScrollToBottom = false) {
+            // Проверяем, находится ли пользователь внизу чата перед загрузкой
+            const isAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100;
+            const wasAtBottom = shouldScrollToBottom || isAtBottom;
+            
+            // При загрузке сообщений чат автоматически отмечается как прочитанный на сервере
+            fetch(`/v1/api/chat/${chatId}/messages`)
+                .then(res => {
+                    if (!res.ok) {
+                        console.error('Ошибка загрузки сообщений:', res.status);
+                        return [];
+                    }
+                    return res.json();
+                })
+                .then(messages => {
+                    if (!messages || messages.length === 0) {
+                        messagesDiv.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px;">Нет сообщений</div>';
+                        return;
+                    }
+                    
+                    // Проверяем, есть ли новые сообщения
+                    const hasNewMessages = messages.length > lastMessageCount;
+                    lastMessageCount = messages.length;
+                    
+                    // Сохраняем текущую позицию прокрутки
+                    const oldScrollTop = messagesDiv.scrollTop;
+                    const oldScrollHeight = messagesDiv.scrollHeight;
+                    
+                    function linkify(safeText) {
+                        // Кликабельные ссылки только для безопасных паттернов
+                        // /deal/{id}
+                        safeText = safeText.replace(/(\/deal\/\d+)/g, '<a href="$1" target="_blank" style="color:#1e40af;text-decoration:underline;">$1<\/a>');
+                        // http/https ссылки
+                        safeText = safeText.replace(/\bhttps?:\/\/[^\s<>"]+/g, function(url){
+                            return '<a href="' + url + '" target="_blank" rel="noopener" style="color:#1e40af;text-decoration:underline;">' + url + '<\/a>';
+                        });
+                        return safeText;
+                    }
+
+                    messagesDiv.innerHTML = messages.map(msg => {
+                        const isOwn = msg.userId === currentUserId;
+                        const authorName = msg.userFirstName ? `${msg.userFirstName} ${msg.userLastName || ''}`.trim() : msg.userEmail;
+                        const authorInitial = authorName ? authorName.charAt(0).toUpperCase() : 'U';
+                        const date = new Date(msg.sentDate);
+                        const dateStr = date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                        // Показываем "Прочитано" для своих сообщений, если они прочитаны собеседником
+                        const readIndicator = isOwn && msg.read ? '<div class="message-read">Прочитано</div>' : '';
+                        const safeText = (msg.messageText || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const linkedText = linkify(safeText);
+                        return `
+                            <div class="message ${isOwn ? 'own' : ''}">
+                                <div class="message-avatar">${authorInitial}</div>
+                                <div class="message-content">
+                                    <div class="message-author">${authorName || 'Пользователь'}</div>
+                                    <div class="message-bubble">
+                                        <p class="message-text">${linkedText}</p>
+                                    </div>
+                                    <div class="message-time">${dateStr}</div>
+                                    ${readIndicator}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // Прокручиваем вниз только если:
+                    // 1. Пользователь был внизу перед обновлением
+                    // 2. Есть новые сообщения
+                    // 3. Явно запрошена прокрутка вниз
+                    if (forceScrollToBottom || (wasAtBottom && hasNewMessages)) {
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        shouldScrollToBottom = true;
+                    } else {
+                        // Восстанавливаем позицию прокрутки
+                        const newScrollHeight = messagesDiv.scrollHeight;
+                        const scrollDiff = newScrollHeight - oldScrollHeight;
+                        messagesDiv.scrollTop = oldScrollTop + scrollDiff;
+                        shouldScrollToBottom = false;
+                    }
+                    
+                    // Обновляем индикаторы непрочитанных сообщений после загрузки
+                    // Используем небольшую задержку, чтобы дать время базе данных обновиться
+                    setTimeout(() => {
+                        updateUnreadIndicators();
+                    }, 300);
+                })
+                .catch(err => {
+                    console.error('Ошибка при загрузке сообщений:', err);
+                });
+        }
+        
+        // Отслеживаем прокрутку пользователя
+        messagesDiv.addEventListener('scroll', function() {
+            const isAtBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 100;
+            shouldScrollToBottom = isAtBottom;
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Отмечаем чат как прочитанный при загрузке страницы и обновляем индикаторы
+        async function markChatAsReadAndUpdate() {
+            try {
+                const response = await fetch(`/v1/api/chat/${chatId}/mark-read`, { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    console.error('Ошибка при отметке чата как прочитанного:', response.status);
+                    return;
+                }
+                // Увеличиваем задержку для гарантии обновления базы данных
+                await new Promise(resolve => setTimeout(resolve, 300));
+                // Обновляем индикаторы непрочитанных сообщений несколько раз для надежности
+                await updateUnreadIndicators();
+                await new Promise(resolve => setTimeout(resolve, 200));
+                await updateUnreadIndicators();
+                // Перезагружаем сообщения, чтобы обновить статус "Прочитано"
+                loadMessages(true); // При первой загрузке прокручиваем вниз
+            } catch (err) {
+                console.error('Ошибка при отметке чата как прочитанного:', err);
+            }
+        }
+        
+        // Функция для обновления индикаторов непрочитанных сообщений
+        async function updateUnreadIndicators() {
+            try {
+                // Обновляем индикатор на вкладке "Чаты" через API
+                const res = await fetch('/v1/api/chat/unread-count');
+                if (res.ok) {
+                    const data = await res.json();
+                    const unreadCount = data.unreadCount || 0;
+                    
+                    // Обновляем индикатор на вкладке "Чаты" (если он есть на странице)
+                    const badge = document.getElementById('chats-badge');
+                    if (badge) {
+                        if (unreadCount > 0) {
+                            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                    
+                    // Вызываем глобальную функцию, если она доступна
+                    if (typeof window.checkUnreadMessages === 'function') {
+                        window.checkUnreadMessages();
+                    }
+                }
+                
+                // Обновляем список чатов, если мы на странице списка чатов
+                if (typeof loadChats === 'function') {
+                    loadChats();
+                }
+            } catch (err) {
+                console.error('Ошибка при обновлении индикаторов:', err);
+            }
+        }
+        
+        // Отмечаем чат как прочитанный сразу при загрузке страницы
+        // Используем DOMContentLoaded для гарантии, что страница полностью загружена
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', markChatAsReadAndUpdate);
+        } else {
+            markChatAsReadAndUpdate();
+        }
+        
+        // Обновляем сообщения каждые 3 секунды
+        setInterval(() => loadMessages(false), 3000);
+        
+        // Удаляем пустой чат при выходе, если он был создан, но не использован
+        window.addEventListener('beforeunload', function() {
+            if (isNewEmptyChat && !hasMessages && chatId) {
+                // Используем fetch с keepalive для надежной отправки запроса при закрытии страницы
+                fetch(`/v1/api/chat/${chatId}`, { 
+                    method: 'DELETE',
+                    keepalive: true
+                }).catch(() => {});
+            }
+        });
+        
+        // Также проверяем при переходе на другую страницу
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden' && isNewEmptyChat && !hasMessages && chatId) {
+                fetch(`/v1/api/chat/${chatId}`, { method: 'DELETE' }).catch(() => {});
+            }
+        });
+        
+        // Проверяем при клике на ссылку "К чатам"
+        const backLink = document.querySelector('.back');
+        if (backLink) {
+            backLink.addEventListener('click', function(e) {
+                if (isNewEmptyChat && !hasMessages && chatId) {
+                    e.preventDefault();
+                    fetch(`/v1/api/chat/${chatId}`, { method: 'DELETE' })
+                        .then(() => {
+                            window.location.href = '/chats';
+                        })
+                        .catch(() => {
+                            window.location.href = '/chats';
+                        });
+                }
+            });
+        }
+        
+        // Модальное окно для просмотра карточки недвижимости
+        async function openPropertyView(propertyId) {
+            try {
+                const res = await fetch('/v1/api/properties/' + propertyId);
+                if (!res.ok) {
+                    alert('Не удалось загрузить объявление');
+                    return;
+                }
+                const property = await res.json();
+                
+                const modal = document.getElementById('property-view-modal');
+                if (!modal) {
+                    console.error('Модальное окно не найдено');
+                    return;
+                }
+                
+                const titleEl = modal.querySelector('.property-view-title');
+                const priceEl = modal.querySelector('.property-view-price');
+                const galleryEl = modal.querySelector('.property-view-gallery');
+                const keyFeaturesEl = modal.querySelector('.property-view-key-features');
+                const contentEl = modal.querySelector('.property-view-content-details');
+                const descriptionEl = modal.querySelector('.property-view-description-text');
+                const authorEl = modal.querySelector('.property-view-author-info');
+                const chatBtnEl = modal.querySelector('.property-view-chat-btn');
+                
+                // Заполняем заголовок и цену
+                const propertyType = property.type || '';
+                const propertyTitle = propertyType === 'квартира' 
+                    ? `Квартира ${property.area ? property.area + ' м²' : ''} ${property.city || ''}`
+                    : propertyType === 'дом'
+                    ? `Дом ${property.area ? property.area + ' м²' : ''} ${property.city || ''}`
+                    : propertyType === 'коммерческая'
+                    ? `Коммерческое помещение ${property.area ? property.area + ' м²' : ''} ${property.city || ''}`
+                    : property.address || 'Объявление';
+                
+                if (titleEl) titleEl.textContent = propertyTitle;
+                if (priceEl) priceEl.textContent = property.price ? new Intl.NumberFormat('ru-RU').format(property.price) + ' ₽' : 'Цена не указана';
+                
+                // Галерея
+                if (galleryEl) {
+                    const imageUrls = property.imageUrls ? property.imageUrls.split(',').map(url => url.trim()).filter(url => url) : [];
+                    if (imageUrls.length === 0) {
+                        galleryEl.innerHTML = '<img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop" alt="placeholder" />';
+                        galleryEl.classList.add('single');
+                    } else {
+                        galleryEl.innerHTML = imageUrls.map(url => `<img src="${url}" alt="photo" onerror="this.src=\'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop\'" />`).join('');
+                        galleryEl.classList.toggle('single', imageUrls.length === 1);
+                    }
+                }
+                
+                // Заполняем ключевые характеристики
+                if (keyFeaturesEl) {
+                    const features = [];
+                    if (property.area) features.push({icon: '📐', label: 'Общая площадь', value: property.area + ' м²'});
+                    if (propertyType === 'дом' && property.plotArea) features.push({icon: '🏞️', label: 'Участок', value: property.plotArea + ' сот.'});
+                    if (propertyType === 'дом' && property.buildingMaterial) features.push({icon: '🏗️', label: 'Материал дома', value: property.buildingMaterial});
+                    if (propertyType === 'дом' && property.floorsTotal) features.push({icon: '🪜', label: 'Этажей в доме', value: property.floorsTotal});
+                    if (propertyType === 'квартира' && property.floor && property.floorsTotal) features.push({icon: '🪜', label: 'Этаж', value: property.floor + ' из ' + property.floorsTotal});
+                    if (property.yearBuilt) features.push({icon: '📅', label: 'Год постройки', value: property.yearBuilt});
+                    if (propertyType === 'коммерческая' && property.propertyClass) features.push({icon: '⭐', label: 'Класс', value: property.propertyClass});
+                    if (property.parking) features.push({icon: '🅿️', label: 'Парковка', value: property.parking});
+                    
+                    if (features.length > 0) {
+                        keyFeaturesEl.innerHTML = features.map(f => `
+                            <div class="property-view-key-feature">
+                                <div class="property-view-key-feature-icon">${f.icon}</div>
+                                <div class="property-view-key-feature-text">
+                                    <div class="property-view-key-feature-label">${f.label}</div>
+                                    <div class="property-view-key-feature-value">${f.value}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        keyFeaturesEl.innerHTML = '';
+                    }
+                }
+                
+                // Заполняем детальную информацию
+                if (contentEl) {
+                    let html = '';
+                    
+                    // Секция "О квартире" / "О доме" / "Об объекте"
+                    const sectionTitle = propertyType === 'квартира' ? 'О квартире' 
+                        : propertyType === 'дом' ? 'О доме' 
+                        : 'Об объекте';
+                    
+                    html += `<div class="property-view-section">
+                        <div class="property-view-section-title">${sectionTitle}</div>
+                        <div class="property-view-section-grid">`;
+                    
+                    if (property.area) html += `<div class="property-view-row"><div class="property-view-label">Площадь</div><div class="property-view-value">${property.area} м²</div></div>`;
+                    if (propertyType === 'квартира' && property.kitchenArea) html += `<div class="property-view-row"><div class="property-view-label">Площадь кухни</div><div class="property-view-value">${property.kitchenArea} м²</div></div>`;
+                    if (property.rooms) html += `<div class="property-view-row"><div class="property-view-label">Комнат</div><div class="property-view-value">${property.rooms}</div></div>`;
+                    if (propertyType === 'дом' && property.bedrooms) html += `<div class="property-view-row"><div class="property-view-label">Спален</div><div class="property-view-value">${property.bedrooms}</div></div>`;
+                    if (property.bathrooms) html += `<div class="property-view-row"><div class="property-view-label">Санузел</div><div class="property-view-value">${property.bathrooms} ${property.bathrooms === 1 ? 'раздельный' : 'раздельных'}</div></div>`;
+                    if (property.buildingMaterial) html += `<div class="property-view-row"><div class="property-view-label">Материал дома</div><div class="property-view-value">${property.buildingMaterial}</div></div>`;
+                    if (property.condition) html += `<div class="property-view-row"><div class="property-view-label">Состояние</div><div class="property-view-value">${property.condition}</div></div>`;
+                    if (propertyType === 'квартира' && property.windowView) html += `<div class="property-view-row"><div class="property-view-label">Вид из окон</div><div class="property-view-value">${property.windowView}</div></div>`;
+                    if (property.renovation) html += `<div class="property-view-row"><div class="property-view-label">Ремонт</div><div class="property-view-value">${property.renovation}</div></div>`;
+                    if (property.furnished !== null && property.furnished !== undefined) html += `<div class="property-view-row"><div class="property-view-label">Продаётся с мебелью</div><div class="property-view-value">${property.furnished ? 'Да' : 'Нет'}</div></div>`;
+                    if (property.category) html += `<div class="property-view-row"><div class="property-view-label">Тип жилья</div><div class="property-view-value">${property.category}</div></div>`;
+                    
+                    html += `</div></div>`;
+                    
+                    // Секция "Об участке" (только для домов)
+                    if (propertyType === 'дом' && (property.plotArea || property.landCategory)) {
+                        html += `<div class="property-view-section">
+                            <div class="property-view-section-title">Об участке</div>
+                            <div class="property-view-section-grid">`;
+                        if (property.plotArea) html += `<div class="property-view-row"><div class="property-view-label">Площадь</div><div class="property-view-value">${property.plotArea} сот.</div></div>`;
+                        if (property.landCategory) html += `<div class="property-view-row"><div class="property-view-label">Категория земель</div><div class="property-view-value">${property.landCategory}</div></div>`;
+                        html += `</div></div>`;
+                    }
+                    
+                    // Секция "О доме" (только для квартир)
+                    if (propertyType === 'квартира' && (property.yearBuilt || property.buildingMaterial || property.floorsTotal || property.parking)) {
+                        html += `<div class="property-view-section">
+                            <div class="property-view-section-title">О доме</div>
+                            <div class="property-view-section-grid">`;
+                        if (property.yearBuilt) html += `<div class="property-view-row"><div class="property-view-label">Год постройки</div><div class="property-view-value">${property.yearBuilt}</div></div>`;
+                        if (property.buildingMaterial) html += `<div class="property-view-row"><div class="property-view-label">Тип дома</div><div class="property-view-value">${property.buildingMaterial}</div></div>`;
+                        if (property.floorsTotal) html += `<div class="property-view-row"><div class="property-view-label">Этажность</div><div class="property-view-value">${property.floorsTotal}</div></div>`;
+                        if (property.parking) html += `<div class="property-view-row"><div class="property-view-label">Парковка</div><div class="property-view-value">${property.parking}</div></div>`;
+                        html += `</div></div>`;
+                    }
+                    
+                    // Секция "Коммуникации и удобства"
+                    if (property.heating || property.waterSupply || property.sewerage || property.gas || property.electricity || property.amenities) {
+                        html += `<div class="property-view-section">
+                            <div class="property-view-section-title">Коммуникации и удобства</div>
+                            <div class="property-view-utilities">`;
+                        if (property.heating) html += `<div class="property-view-utility"><span class="property-view-utility-label">Отопление</span><span class="property-view-utility-value">${property.heating}</span></div>`;
+                        if (property.waterSupply) html += `<div class="property-view-utility"><span class="property-view-utility-label">Водоснабжение</span><span class="property-view-utility-value">${property.waterSupply}</span></div>`;
+                        if (property.sewerage) html += `<div class="property-view-utility"><span class="property-view-utility-label">Канализация</span><span class="property-view-utility-value">${property.sewerage}</span></div>`;
+                        if (property.gas) html += `<div class="property-view-utility"><span class="property-view-utility-label">Газ</span><span class="property-view-utility-value">${property.gas}</span></div>`;
+                        if (property.electricity) html += `<div class="property-view-utility"><span class="property-view-utility-label">Электричество</span><span class="property-view-utility-value">${property.electricity}</span></div>`;
+                        html += `</div>`;
+                        if (property.amenities) {
+                            const amenitiesList = property.amenities.split(',').map(a => a.trim()).filter(a => a);
+                            if (amenitiesList.length > 0) {
+                                html += `<div class="property-view-amenities">`;
+                                amenitiesList.forEach(amenity => {
+                                    html += `<span class="property-view-amenity">${amenity}</span>`;
+                                });
+                                html += `</div>`;
+                            }
+                        }
+                        html += `</div>`;
+                    }
+                    
+                    contentEl.innerHTML = html;
+                }
+                
+                if (descriptionEl) {
+                    descriptionEl.innerHTML = property.description && property.description.trim() ? property.description : '—';
+                }
+                
+                if (authorEl) {
+                    const authorName = property.authorFirstName 
+                        ? `${property.authorFirstName} ${property.authorLastName || ''}`.trim()
+                        : property.authorEmail || 'Неизвестный пользователь';
+                    authorEl.innerHTML = `
+                        <span>Автор объявления:</span>
+                        <span class="property-view-author-name">${authorName}</span>
+                        ${property.isRealtor ? '<span class="property-view-author-badge">Риелтор</span>' : ''}
+                    `;
+                }
+                
+                if (chatBtnEl) {
+                    chatBtnEl.style.display = 'none'; // Скрываем кнопку "Связаться" в модальном окне, так как мы уже в чате
+                }
+                
+                // Открываем модальное окно
+                modal.classList.add('open');
+                // Блокируем прокрутку фона
+                document.body.style.overflow = 'hidden';
+            } catch (err) {
+                console.error('Ошибка при загрузке объявления:', err);
+                alert('Не удалось загрузить объявление');
+            }
+        }
+        
+        function closePropertyView() {
+            const modal = document.getElementById('property-view-modal');
+            if (modal) {
+                modal.classList.remove('open');
+                // Разблокируем прокрутку фона
+                document.body.style.overflow = '';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('property-view-modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closePropertyView();
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Модальное окно для просмотра карточки недвижимости -->
+    <div id="property-view-modal" class="property-view-modal">
+        <div class="property-view-card">
+            <button class="property-view-close" onclick="closePropertyView()">×</button>
+            <div class="property-view-gallery">
+                <!-- Галерея будет загружена через JavaScript -->
+            </div>
+            <div class="property-view-content">
+                <div class="property-view-title">Загрузка...</div>
+                <div class="property-view-price">—</div>
+                <div class="property-view-key-features">
+                    <!-- Ключевые характеристики будут загружены через JavaScript -->
+                </div>
+                <div class="property-view-content-details">
+                    <!-- Детали будут загружены через JavaScript -->
+                </div>
+                <div class="property-view-description">
+                    <div class="property-view-label">Описание</div>
+                    <div class="property-view-value property-view-description-text">—</div>
+                </div>
+                <div class="property-view-author property-view-author-info">
+                    <!-- Информация об авторе будет загружена через JavaScript -->
+                </div>
+                <button class="property-view-chat-btn" style="display:none;">Связаться</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

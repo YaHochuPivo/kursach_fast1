@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Избранное — RealEstate</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .btn { display:inline-block; padding:8px 12px; border-radius:6px; text-decoration:none; font-weight:600; border:1px solid #dbeafe; background:#ffffff; color:#1e293b; }
+        .btn-primary { background:#2563eb; color:#fff; border-color:#2563eb; }
+        .btn-plain { border:1px solid #dbeafe; background:#fff; color:#1f2937; padding:8px 12px; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:14px; margin:20px 0; }
+        .card { background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; position:relative; max-width: 400px; width: 100%; }
+        .media { position:relative; width:100%; aspect-ratio: 16 / 9; background:#e2e8f0; overflow:hidden; }
+        .media img { width:100%; height:100%; object-fit:cover; display:block; }
+        .meta { position:absolute; inset:auto 0 0 0; padding:10px 12px; background: linear-gradient(to top, rgba(15,23,42,.70), rgba(15,23,42,.0)); color:#fff; display:grid; gap:3px; }
+        .meta .title { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .meta .spec { font-size:12px; opacity:.95; }
+        .meta .price { font-weight:800; font-size:14px; }
+        .card-body { padding:10px 12px; display:grid; gap:6px; }
+        .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:12px; }
+        .pill.promoted { background:#fef3c7; color:#92400e; }
+        .favorite-btn { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:#fecaca; border:none; cursor:pointer; display:grid; place-items:center; font-size:16px; z-index:10; }
+        .favorite-btn:hover { background:#fca5a5; }
+        .card-link { position:absolute; inset:0; z-index:1; }
+        .author-info { font-size:14px; color:#64748b; margin-top:8px; padding-top:8px; border-top:1px solid #e2e8f0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .author-info .author-name { font-weight:500; color:#1e293b; }
+        .author-info .author-badge { padding:2px 6px; border-radius:4px; background:#dbeafe; color:#1e40af; font-size:10px; }
+        .empty-state { text-align:center; padding:40px 20px; color:#64748b; }
+        .page-title { margin:20px 0 10px; font-size:24px; font-weight:700; color:#0f172a; }
+    </style>
+</head>
+<body>
+    <header class="container nav">
+        <div class="brand">
+            <div class="logo">🏠</div>
+            <div>RealEstate</div>
+        </div>
+        <div class="nav-links">
+            <a th:href="@{/}">Главная</a>
+            <a th:href="@{/properties}">Недвижимость</a>
+            <a th:href="@{/user/favorites}" class="btn-plain" sec:authorize="!hasRole('ROLE_ADMIN')">Избранное ❤️</a>
+            <a th:href="@{/chats}" class="btn-plain" sec:authorize="isAuthenticated()">Чаты 💬</a>
+            <a th:href="@{/user/profile}" class="btn-plain" sec:authorize="isAuthenticated()">Профиль</a>
+            <a th:href="@{/login}" class="btn-plain" sec:authorize="isAnonymous()">Войти</a>
+            <a th:href="@{/logout}" class="btn-plain" sec:authorize="isAuthenticated()">Выйти</a>
+            <a th:href="@{/register}" class="btn" sec:authorize="isAnonymous()">Создать аккаунт</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="page-title">Избранное</h1>
+        
+        <div th:if="${isAnonymous}" class="empty-state">
+            <p style="font-size:48px; margin:0 0 16px;">🔒</p>
+            <p style="margin:0 0 10px; font-size:18px; font-weight:600; color:#0f172a;">Авторизация требуется</p>
+            <p style="margin:0 0 20px;">Чтобы просматривать избранное, необходимо войти в аккаунт или зарегистрироваться</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <a th:href="@{/login}" class="btn btn-primary">Войти</a>
+                <a th:href="@{/register}" class="btn">Регистрация</a>
+            </div>
+        </div>
+        
+        <div th:if="${!isAnonymous and (items == null or items.isEmpty())}" class="empty-state">
+            <p style="font-size:48px; margin:0 0 16px;">❤️</p>
+            <p style="margin:0 0 10px; font-size:18px; font-weight:600; color:#0f172a;">Избранное пусто</p>
+            <p style="margin:0 0 20px;">Здесь будут отображаться объекты, которые вы добавите в избранное</p>
+            <a th:href="@{/properties}" class="btn btn-primary">Посмотреть объявления</a>
+        </div>
+
+        <div class="grid">
+            <div class="card" th:each="p : ${items}">
+                <a th:href="@{/properties/{id}(id=${p.id}, from='favorites')}" class="card-link"></a>
+                <div class="media">
+                    <img alt="card" th:src="${p.firstImageUrl != null ? p.firstImageUrl : 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop'}"/>
+                    <button class="favorite-btn" th:onclick="|toggleFavorite(${p.id}, this); event.stopPropagation(); event.preventDefault(); return false;|">❤️</button>
+                    <div class="meta">
+                        <div class="title" th:text="${p.titleForCard}">Название</div>
+                        <div class="spec" th:text="${p.type == 'коммерческая' ? (p.area + ' м² · ' + (p.floor != null ? p.floor : '-') + ' / ' + (p.floorsTotal != null ? p.floorsTotal : '-')) : (p.rooms != null ? p.rooms : '-') + ' комн · ' + p.area + ' м² · ' + (p.floor != null ? p.floor : '-') + ' / ' + (p.floorsTotal != null ? p.floorsTotal : '-')}">характеристики</div>
+                        <div class="price" th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT') + ' ₽'}">Цена</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <span class="pill" th:text="${p.category}">категория</span>
+                        <span class="pill promoted" th:if="${p.promoted}">Лучшее предложение</span>
+                    </div>
+                    <div class="author-info" th:if="${p.user != null}">
+                        <span>Автор:</span>
+                        <span class="author-name" th:text="${p.user.firstName != null ? p.user.firstName + ' ' + (p.user.lastName != null ? p.user.lastName : '') : p.user.email}">Имя пользователя</span>
+                        <span class="author-badge" th:if="${p.realtor != null}">Риелтор</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function toggleFavorite(propertyId, buttonElement){
+            try {
+                const res = await fetch(`/v1/api/favorites/toggle/${propertyId}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success && !data.favorited) {
+                    location.reload();
+                } else if (data.success && buttonElement) {
+                    // Обновляем состояние кнопки
+                    if (data.favorited) {
+                        buttonElement.classList.add('added');
+                    } else {
+                        buttonElement.classList.remove('added');
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка при удалении из избранного:', e);
+            }
+        }
+    </script>
+</body>
+</html>

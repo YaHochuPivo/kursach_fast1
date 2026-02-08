@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; color:#0f172a; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; margin-bottom:8px; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+    .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+    .nav-links { display:flex; align-items:center; gap:10px; }
+    .nav-links .btn { padding:6px 10px; border-radius:6px; border:1px solid #dbeafe; }
+    .title { text-align:center; font-weight:800; font-size:18px; margin:10px 0 16px; }
+    .section { margin:12px 0; }
+    .row { display:flex; gap:8px; margin:6px 0; }
+    .label { min-width:180px; color:#64748b; }
+    .val { font-weight:600; }
+    .grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; }
+    .card { border:1px solid #e2e8f0; border-radius:8px; padding:14px; background:#fff; }
+    h3 { font-size:14px; margin:10px 0 6px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header class="nav">
+    <div class="brand"><div class="logo">🏠</div><div>RealEstate</div></div>
+  </header>
+  <div class="title">ДОГОВОР КУПЛИ-ПРОДАЖИ</div>
+
+  <div class="section card">
+    <div class="grid">
+      <div>
+        <div class="row"><div class="label">Продавец</div><div class="val" th:text="${seller != null ? (seller.firstName + ' ' + (seller.lastName != null ? seller.lastName : '')) : '—'}">—</div></div>
+        <div class="row"><div class="label">Email</div><div class="val" th:text="${seller != null ? seller.email : '—'}">—</div></div>
+      </div>
+      <div>
+        <div class="row"><div class="label">Покупатель</div><div class="val" th:text="${buyer != null ? (buyer.firstName + ' ' + (buyer.lastName != null ? buyer.lastName : '')) : '—'}">—</div></div>
+        <div class="row"><div class="label">Email</div><div class="val" th:text="${buyer != null ? buyer.email : '—'}">—</div></div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:8px;">
+      <div class="row"><div class="label">Паспорт продавца</div><div class="val" th:text="${seller != null ? ((seller.passportSeries != null ? seller.passportSeries : '—') + ' ' + (seller.passportNumber != null ? seller.passportNumber : '—')) : '—'}">—</div></div>
+      <div class="row"><div class="label">Паспорт покупателя</div><div class="val" th:text="${buyer != null ? ((buyer.passportSeries != null ? buyer.passportSeries : '—') + ' ' + (buyer.passportNumber != null ? buyer.passportNumber : '—')) : '—'}">—</div></div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <div class="label">Риелтор</div>
+      <div class="val" th:text="${realtor != null ? (realtor.firstName + ' ' + (realtor.lastName != null ? realtor.lastName : '')) : '—'}">—</div>
+    </div>
+  </div>
+
+  <div class="section card" th:if="${mortgageStatus != null}">
+    <div class="row"><div class="label">Ипотека</div><div class="val">Сделка оформляется с использованием ипотечного кредитования</div></div>
+    <div class="row" th:if="${mortgageBankName != null}"><div class="label">Банк</div><div class="val" th:text="${mortgageBankName}">Банк</div></div>
+    <div class="row" th:if="${mortgageMonthlyPayment != null}"><div class="label">Ежемесячный платёж</div><div class="val" th:text="${#numbers.formatDecimal(mortgageMonthlyPayment, 2, 'COMMA', 2, 'POINT') + ' ₽'}">—</div></div>
+  </div>
+
+  <div class="section card">
+    <div class="row"><div class="label">Объект</div><div class="val" th:text="${property != null ? (property.type != null ? property.type : 'Недвижимость') : 'Недвижимость'}">Недвижимость</div></div>
+    <div class="row"><div class="label">Адрес</div><div class="val" th:text="${property != null ? property.address : '—'}">—</div></div>
+    <div class="row"><div class="label">Сумма</div><div class="val" th:text="${deal != null && deal.finalPrice != null ? #numbers.formatDecimal(deal.finalPrice, 0, 'COMMA', 0, 'POINT') + ' ₽' : (property != null && property.price != null ? #numbers.formatDecimal(property.price, 0, 'COMMA', 0, 'POINT') + ' ₽' : '—')}">—</div></div>
+    <div class="grid" style="margin-top:8px;">
+      <div class="row"><div class="label">Город</div><div class="val" th:text="${property != null ? (property.city != null ? property.city : '—') : '—'}">—</div></div>
+      <div class="row"><div class="label">Район</div><div class="val" th:text="${property != null ? (property.district != null ? property.district : '—') : '—'}">—</div></div>
+      <div class="row"><div class="label">Этаж/Этажность</div><div class="val" th:text="${property != null ? ((property.floor != null ? property.floor : '—') + ' / ' + (property.floorsTotal != null ? property.floorsTotal : '—')) : '—'}">—</div></div>
+      <div class="row"><div class="label">Площадь</div><div class="val" th:text="${property != null && property.area != null ? property.area + ' м²' : '—'}">—</div></div>
+      <div class="row"><div class="label">Комнат</div><div class="val" th:text="${property != null && property.rooms != null ? property.rooms : '—'}">—</div></div>
+      <div class="row"><div class="label">Статус сделки</div><div class="val" th:text="${deal != null ? (deal.status.name()=='completed' ? 'Завершена' : (deal.status.name()=='pending' ? 'Ожидает решения' : 'Отклонена')) : '—'}">—</div></div>
+      <div class="row" th:if="${deal != null && deal.dealDate != null}"><div class="label">Дата подписания</div><div class="val" th:text="${#temporals.format(deal.dealDate, 'dd.MM.yyyy HH:mm')}">—</div></div>
+    </div>
+  </div>
+
+  
+
+  <div class="section card">
+    <div class="title" style="text-align:left;">Текст договора</div>
+    <div style="line-height:1.6;color:#0f172a;">
+      <p>
+        Гражданин(ка)
+        <strong th:text="${seller != null ? (seller.firstName + (seller.lastName != null ? ' ' + seller.lastName : '')) : 'Продавец'}">Продавец</strong>,
+        именуемый(ая) в дальнейшем «Продавец», с одной стороны, и гражданин(ка)
+        <strong th:text="${buyer != null ? (buyer.firstName + (buyer.lastName != null ? ' ' + buyer.lastName : '')) : 'Покупатель'}">Покупатель</strong>,
+        именуемый(ая) в дальнейшем «Покупатель», с другой стороны, а вместе именуемые «Стороны», заключили настоящий договор о нижеследующем.
+      </p>
+      <p th:if="${mortgageStatus != null}">
+        Настоящая сделка заключается с использованием ипотечного кредитования,
+        предоставленного банком <strong th:text="${mortgageBankName != null ? mortgageBankName : 'Банк'}">Банк</strong>.
+        Условия кредита доведены до сведения Покупателя, ежемесячный платёж составляет
+        <strong th:if="${mortgageMonthlyPayment != null}" th:text="${#numbers.formatDecimal(mortgageMonthlyPayment, 2, 'COMMA', 2, 'POINT') + ' ₽'}">—</strong>.
+      </p>
+      <h3>1. Предмет договора</h3>
+      <p>
+        1.1. Продавец продает, а Покупатель приобретает объект недвижимости:
+        <strong th:text="${property != null ? (property.type != null ? property.type : 'Недвижимость') : 'Недвижимость'}">Недвижимость</strong>,
+        расположенный по адресу: <strong th:text="${property != null ? property.address : '—'}">Адрес</strong>,
+        город <strong th:text="${property != null ? (property.city != null ? property.city : '—') : '—'}">Город</strong>.
+      </p>
+      <p>
+        1.2. Характеристики объекта: общая площадь —
+        <strong th:text="${property != null && property.area != null ? property.area + ' м²' : '—'}">—</strong>,
+        количество комнат — <strong th:text="${property != null && property.rooms != null ? property.rooms : '—'}">—</strong>,
+        этаж / этажность — <strong th:text="${property != null ? ((property.floor != null ? property.floor : '—') + ' / ' + (property.floorsTotal != null ? property.floorsTotal : '—')) : '—'}">—</strong>.
+      </p>
+      <h3>2. Цена и порядок расчетов</h3>
+      <p>
+        2.1. Цена объекта составляет
+        <strong th:text="${deal != null && deal.finalPrice != null ? #numbers.formatDecimal(deal.finalPrice, 0, 'COMMA', 0, 'POINT') + ' ₽' : (property != null && property.price != null ? #numbers.formatDecimal(property.price, 0, 'COMMA', 0, 'POINT') + ' ₽' : '—')}">—</strong>.
+      </p>
+      <h3>3. Прочие условия</h3>
+      <p>
+        3.1. Настоящий документ является шаблоном для ознакомления и не заменяет нотариально заверенный договор, если таковой требуется законодательством.
+      </p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель администратора - RealEstate</title>
+    <title>Панель пользователя - RealEstate</title>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -123,55 +123,12 @@
             transform: translateY(-2px);
         }
         .role-badge {
-            background: #dc2626;
+            background: #10b981;
             color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 500;
-        }
-        .stats-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 15px;
-            color: white;
-            text-align: center;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
-        .stat-label {
-            font-size: 1rem;
-            opacity: 0.8;
-            margin: 0.5rem 0 0 0;
-        }
-        .warning-card {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        .warning-card h4 {
-            color: #92400e;
-            margin: 0 0 0.5rem 0;
-        }
-        .warning-card p {
-            color: #92400e;
-            margin: 0;
-            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -182,7 +139,7 @@
             <h1>RealEstate</h1>
         </div>
         <div class="user-info">
-            <span class="role-badge">👑 Администратор</span>
+            <span class="role-badge">👤 Пользователь</span>
             <span>Добро пожаловать, <span th:text="${username}"></span>!</span>
             <a th:href="@{/logout}" class="logout-btn">Выйти</a>
         </div>
@@ -190,90 +147,63 @@
 
     <div class="main-content">
         <div class="welcome-section">
-            <h2>Панель администратора</h2>
-            <p>Управление системой недвижимости</p>
-        </div>
-
-        <div class="warning-card">
-            <h4>⚠️ Внимание администратора</h4>
-            <p>Вы имеете полный доступ к системе. Будьте осторожны при внесении изменений.</p>
+            <h2>Панель пользователя</h2>
+            <p>Управляйте своими объявлениями и сделками</p>
         </div>
 
         <div class="dashboard-grid">
             <div class="dashboard-card">
-                <div class="card-icon">👥</div>
-                <h3 class="card-title">Управление пользователями</h3>
+                <div class="card-icon">🏘️</div>
+                <h3 class="card-title">Мои объявления</h3>
                 <p class="card-description">
-                    Просматривайте, редактируйте и управляйте всеми пользователями системы, включая риелторов.
+                    Просматривайте и управляйте вашими объявлениями о продаже недвижимости.
                 </p>
-                <a th:href="@{/admin/users}" class="card-btn">Управление пользователями</a>
+                <a th:href="@{/user/properties}" class="card-btn">Управление объявлениями</a>
             </div>
 
             <div class="dashboard-card">
-                <div class="card-icon">🏘️</div>
-                <h3 class="card-title">Все объекты</h3>
+                <div class="card-icon">🔍</div>
+                <h3 class="card-title">Поиск недвижимости</h3>
                 <p class="card-description">
-                    Просматривайте все объекты недвижимости в системе, модерируйте объявления.
+                    Ищите подходящую недвижимость для покупки по различным критериям.
                 </p>
-                <a th:href="@{/admin/properties}" class="card-btn">Модерация объектов</a>
+                <a href="#" class="card-btn">Найти недвижимость</a>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon">⭐</div>
+                <h3 class="card-title">Избранное</h3>
+                <p class="card-description">
+                    Сохраняйте понравившиеся объекты для быстрого доступа и сравнения.
+                </p>
+                <a th:href="@{/user/favorites}" class="card-btn">Мое избранное</a>
             </div>
 
             <div class="dashboard-card">
                 <div class="card-icon">🤝</div>
-                <h3 class="card-title">Все сделки</h3>
+                <h3 class="card-title">Мои сделки</h3>
                 <p class="card-description">
-                    Отслеживайте все сделки в системе, контролируйте процесс и разрешайте споры.
+                    Отслеживайте статус ваших сделок по покупке или продаже недвижимости.
                 </p>
-                <a th:href="@{/admin/deals}" class="card-btn">Контроль сделок</a>
+                <a href="#" class="card-btn">Просмотреть сделки</a>
             </div>
 
             <div class="dashboard-card">
-                <div class="card-icon">📊</div>
-                <h3 class="card-title">Системная аналитика</h3>
+                <div class="card-icon">💬</div>
+                <h3 class="card-title">Сообщения</h3>
                 <p class="card-description">
-                    Анализируйте общую статистику системы, доходы и эффективность работы.
+                    Общайтесь с риелторами и другими пользователями через систему сообщений.
                 </p>
-                <a th:href="@{/admin/reports}" class="card-btn">Системная аналитика</a>
+                <a href="#" class="card-btn">Открыть чаты</a>
             </div>
 
             <div class="dashboard-card">
                 <div class="card-icon">⚙️</div>
-                <h3 class="card-title">Настройки системы</h3>
+                <h3 class="card-title">Профиль</h3>
                 <p class="card-description">
-                    Управляйте настройками системы, конфигурацией и параметрами безопасности.
+                    Управляйте личной информацией и настройками аккаунта.
                 </p>
-                <a th:href="@{/admin/settings}" class="card-btn">Настройки системы</a>
-            </div>
-
-            <div class="dashboard-card">
-                <div class="card-icon">🔒</div>
-                <h3 class="card-title">Безопасность</h3>
-                <p class="card-description">
-                    Мониторинг безопасности, управление правами доступа и аудит действий.
-                </p>
-                <a href="#" class="card-btn">Безопасность</a>
-            </div>
-        </div>
-
-        <div class="stats-section">
-            <h3>Общая статистика системы</h3>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-number">1,247</div>
-                    <div class="stat-label">Всего объектов</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">156</div>
-                    <div class="stat-label">Пользователей</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">24</div>
-                    <div class="stat-label">Риелторов</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number">89</div>
-                    <div class="stat-label">Завершенных сделок</div>
-                </div>
+                <a th:href="@{/user/profile}" class="card-btn">Настройки профиля</a>
             </div>
         </div>
     </div>

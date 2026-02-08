@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Договор купли-продажи</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; color:#0f172a; }
+        .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .title { text-align:center; font-weight:800; font-size:20px; margin:8px 0 16px; }
+        .section { margin:12px 0; }
+        .row { display:flex; gap:8px; margin:6px 0; }
+        .label { min-width:180px; color:#64748b; }
+        .val { font-weight:600; }
+        .actions { display:flex; gap:10px; margin-top:20px; }
+        .btn { padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:700; }
+        .btn-primary { background:#16a34a; color:#fff; }
+        .btn-secondary { background:#ef4444; color:#fff; }
+        .btn-outline { background:#fff; border:1px solid #cbd5e1; color:#0f172a; text-decoration:none; display:inline-block; }
+        .muted { color:#64748b; font-size:12px; }
+        .card { border:1px solid #e2e8f0; border-radius:8px; padding:16px; background:#fff; }
+        .grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+        @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .label{min-width:120px;} }
+    </style>
+</head>
+<body>
+<header class="container nav">
+    <div class="brand">
+        <div class="logo">🏠</div>
+        <div>RealEstate</div>
+    </div>
+    <div class="nav-links">
+        <a href="/">Главная</a>
+        <a href="/properties">Недвижимость</a>
+        <a href="/deals">Мои сделки</a>
+        <a href="/chats">Чаты</a>
+        <a href="/user/profile">Профиль</a>
+    </div>
+</header>
+<div class="container">
+    <div class="title">ДОГОВОР КУПЛИ-ПРОДАЖИ</div>
+
+    <div class="card section" th:if="${isPrivateSeller}">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+            <div>
+                <div class="label" style="min-width:auto; margin-bottom:6px;">Статус банковского одобрения</div>
+                <div class="val" th:text="${bankApprovalStatus == null ? 'Не запрошено' : (bankApprovalStatus == 'REQUESTED' ? 'Запрошено' : (bankApprovalStatus == 'APPROVED' ? 'Одобрено' : 'Отклонено'))}">—</div>
+                <div class="muted" th:if="${bankName != null}">Банк: <span th:text="${bankName}">Банк</span></div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-outline" type="button" th:if="${bankApprovalStatus == null}" onclick="requestBankApproval()">Запросить одобрение</button>
+                <button class="btn btn-outline" type="button" th:if="${bankApprovalStatus == 'REQUESTED'}" onclick="refreshBankApproval()">Обновить статус</button>
+                <button class="btn btn-outline" type="button" th:if="${bankApprovalStatus == 'REQUESTED'}" onclick="setBankApprovalStatus('APPROVED')">Одобрить</button>
+                <button class="btn btn-outline" type="button" th:if="${bankApprovalStatus == 'REQUESTED'}" onclick="setBankApprovalStatus('REJECTED')">Отклонить</button>
+            </div>
+        </div>
+        <div class="muted" style="margin-top:8px;" th:if="${bankApprovalStatus != 'APPROVED'}">Частный продавец может отправить договор только после одобрения банка.</div>
+    </div>
+
+    <div class="card section">
+        <div class="grid">
+            <div>
+                <div class="row"><div class="label">Продавец</div><div class="val" th:text="${seller != null ? (seller.firstName + ' ' + (seller.lastName != null ? seller.lastName : '')) : '—'}">—</div></div>
+                <div class="row"><div class="label">Email</div><div class="val" th:text="${seller != null ? seller.email : '—'}">—</div></div>
+            </div>
+            <div>
+                <div class="row"><div class="label">Покупатель</div><div class="val" th:text="${buyer != null ? (buyer.firstName + ' ' + (buyer.lastName != null ? buyer.lastName : '')) : '—'}">—</div></div>
+                <div class="row"><div class="label">Email</div><div class="val" th:text="${buyer != null ? buyer.email : '—'}">—</div></div>
+            </div>
+        </div>
+        <div class="grid" style="margin-top:8px;">
+            <div>
+                <div class="row"><div class="label">Паспорт продавца</div><div class="val" th:text="${seller != null ? ((seller.passportSeries != null ? seller.passportSeries : '—') + ' ' + (seller.passportNumber != null ? seller.passportNumber : '—')) : '—'}">—</div></div>
+            </div>
+            <div>
+                <div class="row"><div class="label">Паспорт покупателя</div><div class="val" th:text="${buyer != null ? ((buyer.passportSeries != null ? buyer.passportSeries : '—') + ' ' + (buyer.passportNumber != null ? buyer.passportNumber : '—')) : '—'}">—</div></div>
+            </div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+            <div class="label">Риелтор</div>
+            <div class="val" th:text="${realtor != null ? (realtor.firstName + ' ' + (realtor.lastName != null ? realtor.lastName : '')) : '—'}">—</div>
+        </div>
+    </div>
+
+    <div class="card section">
+        <div class="row"><div class="label">Объект</div><div class="val" th:text="${property != null ? (property.type != null ? property.type : 'Недвижимость') : 'Недвижимость'}">Недвижимость</div></div>
+        <div class="row"><div class="label">Адрес</div><div class="val" th:text="${property != null ? property.address : '—'}">—</div></div>
+        <div class="row"><div class="label">Сумма</div><div class="val" th:text="${deal != null && deal.finalPrice != null ? #numbers.formatDecimal(deal.finalPrice, 0, 'COMMA', 0, 'POINT') + ' ₽' : (property != null && property.price != null ? #numbers.formatDecimal(property.price, 0, 'COMMA', 0, 'POINT') + ' ₽' : '—')}">—</div></div>
+        <div class="grid" style="margin-top:8px;">
+            <div class="row"><div class="label">Город</div><div class="val" th:text="${property != null ? (property.city != null ? property.city : '—') : '—'}">—</div></div>
+            <div class="row"><div class="label">Район</div><div class="val" th:text="${property != null ? (property.district != null ? property.district : '—') : '—'}">—</div></div>
+            <div class="row"><div class="label">Этаж/Этажность</div><div class="val" th:text="${property != null ? ((property.floor != null ? property.floor : '—') + ' / ' + (property.floorsTotal != null ? property.floorsTotal : '—')) : '—'}">—</div></div>
+            <div class="row"><div class="label">Площадь</div><div class="val" th:text="${property != null && property.area != null ? property.area + ' м²' : '—'}">—</div></div>
+            <div class="row"><div class="label">Комнат</div><div class="val" th:text="${property != null && property.rooms != null ? property.rooms : '—'}">—</div></div>
+            <div class="row"><div class="label">Статус сделки</div><div class="val" th:text="${deal != null ? (deal.status.name()=='completed' ? 'Завершена' : (deal.status.name()=='pending' ? 'Ожидает решения' : 'Отклонена')) : '—'}">—</div></div>
+            <div class="row" th:if="${deal != null && deal.dealDate != null}"><div class="label">Дата подписания</div><div class="val" th:text="${#temporals.format(deal.dealDate, 'dd.MM.yyyy HH:mm')}">—</div></div>
+        </div>
+    </div>
+
+    <div class="card section">
+        <div class="title" style="font-weight:700;margin-bottom:8px;text-align:left;">Ипотека</div>
+        <div class="row" th:if="${mortgageStatus != null}">
+            <div class="label">Статус ипотеки</div>
+            <div class="val" th:text="${mortgageStatus == 'REQUESTED' ? 'Заявка отправлена' : (mortgageStatus == 'APPROVED' ? 'Одобрена' : 'Отклонена')}">—</div>
+        </div>
+        <div class="row" th:if="${mortgageBankName != null}"><div class="label">Банк</div><div class="val" th:text="${mortgageBankName}">Банк</div></div>
+        <div class="row" th:if="${mortgageMonthlyPayment != null}"><div class="label">Ежемесячный платёж</div><div class="val" th:text="${#numbers.formatDecimal(mortgageMonthlyPayment, 2, 'COMMA', 2, 'POINT') + ' ₽'}">—</div></div>
+        <div class="muted" th:if="${mortgageStatus != null}" style="margin-top:6px;">Сделка оформляется с использованием ипотечного кредитования.</div>
+
+        <div class="actions" th:if="${mortgageStatus == null and buyer != null and currentUserEmail != null and currentUserEmail.equals(buyer.email)}">
+            <button class="btn btn-outline" type="button" onclick="applyMortgage()">Оформить ипотеку</button>
+        </div>
+        <div class="actions" th:if="${mortgageStatus == 'REQUESTED' and buyer != null and currentUserEmail != null and currentUserEmail.equals(buyer.email)}">
+            <button class="btn btn-outline" type="button" onclick="setMortgageStatus('APPROVED')">Одобрить ипотеку</button>
+            <button class="btn btn-outline" type="button" onclick="setMortgageStatus('REJECTED')">Отклонить ипотеку</button>
+        </div>
+    </div>
+
+    <div class="card section">
+        <div class="title" style="font-weight:700;margin-bottom:8px;">Текст договора</div>
+        <div class="muted" style="margin-bottom:8px;">Ниже приведена текстовая часть примерного договора с подстановкой данных.</div>
+        <div style="line-height:1.6;color:#0f172a;">
+            <p>
+                Гражданин(ка)
+                <strong th:text="${seller != null ? (seller.firstName + (seller.lastName != null ? ' ' + seller.lastName : '')) : 'Продавец'}">Продавец</strong>,
+                именуемый(ая) в дальнейшем «Продавец», с одной стороны, и гражданин(ка)
+                <strong th:text="${buyer != null ? (buyer.firstName + (buyer.lastName != null ? ' ' + buyer.lastName : '')) : 'Покупатель'}">Покупатель</strong>,
+                именуемый(ая) в дальнейшем «Покупатель», с другой стороны, а вместе именуемые «Стороны», заключили настоящий договор о нижеследующем.
+            </p>
+            <h3 style="margin:14px 0 6px;">1. Предмет договора</h3>
+            <p>
+                1.1. Продавец продает, а Покупатель приобретает объект недвижимости: 
+                <strong th:text="${property != null ? (property.type != null ? property.type : 'Недвижимость') : 'Недвижимость'}">Недвижимость</strong>,
+                расположенный по адресу: <strong th:text="${property != null ? property.address : '—'}">Адрес</strong>,
+                город <strong th:text="${property != null ? (property.city != null ? property.city : '—') : '—'}">Город</strong>.
+            </p>
+            <p>
+                1.2. Характеристики объекта: общая площадь —
+                <strong th:text="${property != null && property.area != null ? property.area + ' м²' : '—'}">—</strong>,
+                количество комнат — <strong th:text="${property != null && property.rooms != null ? property.rooms : '—'}">—</strong>,
+                этаж / этажность — <strong th:text="${property != null ? ((property.floor != null ? property.floor : '—') + ' / ' + (property.floorsTotal != null ? property.floorsTotal : '—')) : '—'}">—</strong>.
+            </p>
+            <h3 style="margin:14px 0 6px;">2. Цена и порядок расчетов</h3>
+            <p>
+                2.1. Цена объекта составляет
+                <strong th:text="${deal != null && deal.finalPrice != null ? #numbers.formatDecimal(deal.finalPrice, 0, 'COMMA', 0, 'POINT') + ' ₽' : (property != null && property.price != null ? #numbers.formatDecimal(property.price, 0, 'COMMA', 0, 'POINT') + ' ₽' : '—')}">—</strong>.
+            </p>
+            <h3 style="margin:14px 0 6px;">3. Прочие условия</h3>
+            <p>
+                3.1. Настоящий документ является шаблоном для ознакомления и не заменяет нотариально заверенный договор, если таковой требуется законодательством.
+            </p>
+        </div>
+    </div>
+
+    <div class="card section">
+        <div class="muted">Нажимая «Принять», покупатель подтверждает согласие с условиями примерного договора и выражает намерение завершить сделку по указанному объекту. Данный документ является шаблоном для ознакомления и не заменяет нотариально заверенный договор, если таковой требуется.</div>
+        <div class="actions">
+            <a class="btn btn-outline" href="/deals">← Назад к Мои сделки</a>
+        </div>
+        <!-- Кнопки показываем только если статус pending -->
+        <div class="actions" th:if="${!readonly and deal != null and deal.status.name() == 'pending' and buyer != null and currentUserEmail != null and currentUserEmail.equals(buyer.email)}">
+            <button class="btn btn-primary" th:onclick="|acceptDeal(${deal.id})|">Принять</button>
+            <button class="btn btn-secondary" th:onclick="|declineDeal(${deal.id})|">Отказаться</button>
+            <a class="btn btn-outline" th:if="${canGeneratePdf}" th:href="@{|/deal/${deal.id}/pdf|}">Скачать PDF</a>
+            <span class="muted" th:if="${!canGeneratePdf}">PDF недоступен: требуется паспортные данные у сторон и (для частного продавца) одобрение банка</span>
+        </div>
+        <div class="actions" th:if="${readonly or deal == null or deal.status.name() != 'pending' or buyer == null or currentUserEmail == null or !currentUserEmail.equals(buyer.email)}">
+            <a class="btn btn-outline" th:if="${canGeneratePdf}" th:href="@{|/deal/${deal.id}/pdf|}">Скачать PDF</a>
+            <span class="muted" th:if="${!canGeneratePdf}">PDF недоступен: требуется паспортные данные у сторон и (для частного продавца) одобрение банка</span>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const DEAL_ID = /*[[${deal.id}]]*/ 0;
+
+    async function acceptDeal(id) {
+        try {
+            const res = await fetch(`/v1/api/deal/${id}/accept`, { method: 'POST' });
+            if (!res.ok) { alert('Не удалось принять договор'); return; }
+            const data = await res.json();
+            window.location.href = data.redirect || '/deals';
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function declineDeal(id) {
+        try {
+            const res = await fetch(`/v1/api/deal/${id}/decline`, { method: 'POST' });
+            if (!res.ok) { alert('Не удалось отклонить договор'); return; }
+            const data = await res.json();
+            window.location.href = data.redirect || '/deals';
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function requestBankApproval() {
+        try {
+            const bankName = prompt('Укажите банк (например, Сбербанк):', 'Банк');
+            const res = await fetch('/v1/api/bank-approval/request', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dealId: String(DEAL_ID), bankName: bankName || 'Банк' })
+            });
+            if (!res.ok) { alert('Не удалось отправить запрос в банк'); return; }
+            location.reload();
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function refreshBankApproval() { location.reload(); }
+
+    async function setBankApprovalStatus(status) {
+        try {
+            const res = await fetch(`/v1/api/bank-approval/${DEAL_ID}/set-status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok || !data.success) { alert(data.message || 'Не удалось изменить статус'); return; }
+            location.reload();
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function applyMortgage() {
+        try {
+            const bankName = prompt('Укажите банк (например, Сбербанк):', 'Банк');
+            if (bankName === null) return;
+            const amount = prompt('Сумма кредита (без первоначального взноса), ₽:', '3000000');
+            if (amount === null) return;
+            const downPayment = prompt('Первоначальный взнос, ₽ (необязательно):', '0');
+            if (downPayment === null) return;
+            const termMonths = prompt('Срок, месяцев:', '240');
+            if (termMonths === null) return;
+            const rate = prompt('Ставка, % годовых:', '12.0');
+            if (rate === null) return;
+            const res = await fetch('/v1/api/mortgage/apply', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dealId: String(DEAL_ID), bankName, amount, downPayment, termMonths, rate })
+            });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok || !data.success) { alert(data.message || 'Не удалось оформить ипотеку'); return; }
+            location.reload();
+        } catch (e) { alert('Ошибка сети'); }
+    }
+
+    async function setMortgageStatus(status) {
+        try {
+            const res = await fetch(`/v1/api/mortgage/${DEAL_ID}/set-status`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok || !data.success) { alert(data.message || 'Не удалось изменить статус ипотеки'); return; }
+            location.reload();
+        } catch (e) { alert('Ошибка сети'); }
+    }
+</script>
+</body>
+</html>

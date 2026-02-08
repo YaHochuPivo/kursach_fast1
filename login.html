@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — RealEstate</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .auth-card { width: 420px; max-width: calc(100% - 24px); margin: 40px auto; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+        .auth-head { padding:14px 16px; background:#eff6ff; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; }
+        .auth-body { padding:16px; display:grid; gap:12px; }
+        .form-group label { display:block; margin:0 0 6px; color:#64748b; font-size:12px; }
+        .form-group input { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; }
+        .btn-primary { padding:10px 12px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-weight:600; }
+        .muted { color:#64748b; font-size:13px; text-align:center; }
+        .muted a { color:#1d4ed8; text-decoration:none; }
+        .muted a:hover { text-decoration:underline; }
+        .alert { padding:10px 12px; border-radius:6px; border:1px solid #e2e8f0; }
+        .alert.error { background:#fff1f2; border-color:#fecaca; color:#7f1d1d; }
+        .alert.success { background:#f0fdf4; border-color:#bbf7d0; color:#14532d; }
+    </style>
+</head>
+<body>
+    <header class="container nav">
+        <div class="brand">
+            <div class="logo">🏠</div>
+            <div>RealEstate</div>
+        </div>
+        <div class="nav-links">
+            <a th:href="@{/}">Главная</a>
+            <a th:href="@{/properties}">Недвижимость</a>
+            <a th:href="@{/register}">Создать аккаунт</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="auth-card">
+            <div class="auth-head">Вход в аккаунт</div>
+            <div class="auth-body">
+                <div th:if="${param.error}" class="alert error">Неверный email или пароль</div>
+                <div th:if="${param.logout}" class="alert success">Вы успешно вышли из системы</div>
+                <div th:if="${param.registered}" class="alert success">Успешная регистрация. Теперь вы можете войти</div>
+
+                <div id="forgot-alert" class="alert" style="display:none;"></div>
+                
+                <div id="login-form">
+                    <form th:action="@{/login}" method="post">
+                        <div class="form-group">
+                            <label for="username">Email</label>
+                            <input type="email" id="username" name="username" required placeholder="Введите ваш email" />
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Пароль</label>
+                            <input type="password" id="password" name="password" required placeholder="Введите пароль" />
+                        </div>
+                        <button type="submit" class="btn-primary">Войти</button>
+                    </form>
+                    <div class="muted">
+                        Нет аккаунта? <a th:href="@{/register}">Зарегистрироваться</a><br>
+                        <a href="#" onclick="showForgotForm(); return false;" style="text-decoration:none; color:#1d4ed8;">Забыли пароль?</a>
+                    </div>
+                </div>
+                
+                <div id="forgot-form" style="display:none;">
+                    <div class="form-group">
+                        <label for="forgot-email">Введите ваш email</label>
+                        <input type="email" id="forgot-email" placeholder="email@example.com" />
+                    </div>
+                    <button type="button" class="btn-primary" onclick="sendPasswordReset()">Выслать новый пароль</button>
+                    <div class="muted">
+                        <a href="#" onclick="showLoginForm(); return false;" style="text-decoration:none; color:#1d4ed8;">← Назад ко входу</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showForgotForm() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'block';
+        }
+        function showLoginForm() {
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+        }
+        async function sendPasswordReset() {
+            const email = document.getElementById('forgot-email').value;
+            if (!email) {
+                showAlert('Введите email', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/v1/api/user/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    showAlert(data.message || 'Ошибка при отправке письма', 'error');
+                    return;
+                }
+                showAlert('Новый пароль отправлен на ваш email (если он существует в системе)', 'success');
+            } catch (e) {
+                showAlert('Ошибка сети', 'error');
+            }
+        }
+        function showAlert(message, type) {
+            const el = document.getElementById('forgot-alert');
+            el.textContent = message;
+            el.className = `alert ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
+    </script>
+</body>
+</html>
+

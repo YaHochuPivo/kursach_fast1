@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация — RealEstate</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .auth-card { width: 640px; max-width: calc(100% - 24px); margin: 40px auto; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; }
+        .auth-head { padding:14px 16px; background:#eff6ff; font-weight:700; color:#334155; display:flex; align-items:center; gap:8px; }
+        .auth-body { padding:16px; display:grid; gap:12px; }
+        .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+        .full { grid-column: 1 / -1; }
+        label { display:block; margin:0 0 6px; color:#64748b; font-size:12px; }
+        input, select { width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:6px; box-sizing:border-box; }
+        .btn-primary { padding:10px 12px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-weight:600; }
+        .muted { color:#64748b; font-size:13px; text-align:center; }
+        .muted a { color:#1d4ed8; text-decoration:none; }
+        .muted a:hover { text-decoration:underline; }
+        .alert { padding:10px 12px; border-radius:6px; border:1px solid #e2e8f0; }
+        .alert.error { background:#fff1f2; border-color:#fecaca; color:#7f1d1d; }
+    </style>
+</head>
+<body>
+    <header class="container nav">
+        <div class="brand">
+            <div class="logo">🏠</div>
+            <div>RealEstate</div>
+        </div>
+        <div class="nav-links">
+            <a th:href="@{/}">Главная</a>
+            <a th:href="@{/properties}">Недвижимость</a>
+            <a th:href="@{/login}">Войти</a>
+        </div>
+    </header>
+    <main class="container">
+        <div class="auth-card">
+            <div class="auth-head">Создание аккаунта</div>
+            <div class="auth-body">
+                <div th:if="${error}" class="alert error" th:text="${error}"></div>
+                <form th:action="@{/register}" method="post" th:object="${user}">
+                    <div class="row">
+                        <div>
+                            <label for="firstName">Имя</label>
+                            <input type="text" id="firstName" th:field="*{firstName}" required />
+                        </div>
+                        <div>
+                            <label for="lastName">Фамилия</label>
+                            <input type="text" id="lastName" th:field="*{lastName}" required />
+                        </div>
+                        <div class="full">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" th:field="*{email}" required />
+                        </div>
+                        <div class="full">
+                            <label for="phone">Телефон</label>
+                            <input type="tel" id="phone" th:field="*{phone}" />
+                        </div>
+                        <div class="full">
+                            <label for="role">Тип аккаунта</label>
+                            <select id="role" th:field="*{role}" onchange="toggleRealtorLicense()" required>
+                                <option value="">Выберите...</option>
+                                <option value="USER">Пользователь</option>
+                                <option value="REALTOR">Риелтор</option>
+                            </select>
+                        </div>
+                        <div id="realtorLicenseDiv" class="full" style="display:none;">
+                            <label for="realtorLicense">Лицензия риелтора</label>
+                            <input type="text" id="realtorLicense" th:field="*{realtorLicense}" placeholder="RL-2024-001" pattern="^RL-\d{4}-\d{3}$" />
+                        </div>
+                        <div class="full">
+                            <label for="passwordHash">Пароль</label>
+                            <input type="password" id="passwordHash" th:field="*{passwordHash}" required />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Создать аккаунт</button>
+                </form>
+                <div class="muted">Уже есть аккаунт? <a th:href="@{/login}">Войти</a></div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        function toggleRealtorLicense(){
+            const role = document.getElementById('role');
+            const wrap = document.getElementById('realtorLicenseDiv');
+            const input = document.getElementById('realtorLicense');
+            if (role.value === 'REALTOR') { wrap.style.display='block'; input.required=true; }
+            else { wrap.style.display='none'; input.required=false; input.value=''; }
+        }
+    </script>
+</body>
+</html>
+

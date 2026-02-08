@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль — RealEstate</title>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#ffffff; color:#0f172a; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .btn { display:inline-block; padding:8px 12px; border-radius:6px; text-decoration:none; font-weight:600; border:1px solid #dbeafe; background:#ffffff; color:#1e293b; }
+        .btn-primary { background:#2563eb; color:#fff; border-color:#2563eb; }
+        .btn-plain { border:1px solid #dbeafe; background:#fff; color:#1f2937; padding:8px 12px; }
+        .profile-card { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; background:#fff; margin:20px 0; }
+        .profile-header { padding:16px; background:#eff6ff; border-bottom:1px solid #dbeafe; }
+        .profile-header h2 { margin:0; font-size:20px; color:#0f172a; }
+        .profile-body { padding:16px; display:grid; gap:16px; grid-template-columns: repeat(2, 1fr); }
+        .profile-body .full { grid-column: 1 / -1; }
+        .form-group { display:grid; gap:8px; }
+        .form-group label { font-size:12px; color:#64748b; font-weight:600; }
+        .form-group input, .form-group select { padding:10px 12px; border:1px solid #e2e8f0; border-radius:6px; }
+        .form-group input:disabled { background:#f8fafc; color:#64748b; }
+        .btn-submit { padding:10px 16px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-weight:600; }
+        .btn-submit:hover { background:#1d4ed8; }
+        .alert { padding:10px 12px; border-radius:6px; border:1px solid #e2e8f0; }
+        .alert.success { background:#f0fdf4; border-color:#bbf7d0; color:#14532d; }
+        .alert.error { background:#fff1f2; border-color:#fecaca; color:#7f1d1d; }
+        @media (max-width: 680px) { .profile-body { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="container nav">
+        <div class="brand">
+            <div class="logo">🏠</div>
+            <div>RealEstate</div>
+        </div>
+
+        
+        <div class="nav-links">
+            <a th:href="@{/}">Главная</a>
+            <a th:href="@{/properties}">Недвижимость</a>
+            <a th:href="@{/admin/logs}" class="btn-plain" th:if="${user != null and user.role != null and user.role.toString() == 'ADMIN'}">Логи</a>
+            <a th:href="@{/logout}" class="btn-plain">Выйти</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2>Личный кабинет</h2>
+            </div>
+            <div class="profile-body">
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input type="text" th:value="${user?.firstName}" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Фамилия</label>
+                    <input type="text" th:value="${user?.lastName}" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" th:value="${user?.email}" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" th:value="${user?.phone ?: '—'}" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Роль</label>
+                    <select disabled>
+                        <option th:value="${user?.role}" th:selected="true" th:text="${user?.role.toString() == 'ADMIN' ? 'Администратор' : (user?.role.toString() == 'REALTOR' ? 'Риелтор' : 'Пользователь')}">—</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Лицензия риелтора</label>
+                    <input type="text" th:value="${user?.realtorLicense ?: '—'}" disabled />
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card" id="phone-section">
+            <div class="profile-header">
+                <h2>Изменение телефона</h2>
+            </div>
+            <div class="profile-body">
+                <div id="phone-alert" class="alert" style="display:none;"></div>
+                <div class="form-group full">
+                    <label>Новый номер телефона</label>
+                    <input type="tel" id="new-phone" th:value="${user?.phone}" />
+                </div>
+                <div class="form-group full">
+                    <button type="button" class="btn-submit" onclick="updatePhone()">Сохранить телефон</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card" id="password-section">
+            <div class="profile-header">
+                <h2>Изменение пароля</h2>
+            </div>
+            <div class="profile-body">
+                <div id="password-alert" class="alert" style="display:none;"></div>
+                <div class="form-group full">
+                    <label>Текущий пароль</label>
+                    <input type="password" id="current-password" />
+                </div>
+                <div class="form-group full">
+                    <label>Новый пароль</label>
+                    <input type="password" id="new-password" />
+                </div>
+                <div class="form-group full">
+                    <label>Подтвердите новый пароль</label>
+                    <input type="password" id="confirm-password" />
+                </div>
+                <div class="form-group full">
+                    <button type="button" class="btn-submit" onclick="changePassword()">Изменить пароль</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card" th:if="${user != null and user.role != null and user.role.toString() != 'ADMIN'}" id="passport-section">
+            <div class="profile-header">
+                <h2>Паспортные данные</h2>
+            </div>
+            <div class="profile-body">
+                <div id="passport-alert" class="alert" style="display:none;"></div>
+                <div class="form-group">
+                    <label>Серия (4 цифры)</label>
+                    <input type="text" id="passport-series" maxlength="4" pattern="\d{4}" th:value="${user?.passportSeries}" placeholder="Например, 1234" />
+                </div>
+                <div class="form-group">
+                    <label>Номер (6 цифр)</label>
+                    <input type="text" id="passport-number" maxlength="6" pattern="\d{6}" th:value="${user?.passportNumber}" placeholder="Например, 123456" />
+                </div>
+                <div class="form-group full">
+                    <button type="button" class="btn-submit" onclick="updatePassport()">Сохранить паспортные данные</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card" th:if="${user != null and user.role != null and user.role.toString() == 'REALTOR'}" id="service-fee-section">
+            <div class="profile-header">
+                <h2>Стоимость услуг риелтора</h2>
+            </div>
+            <div class="profile-body">
+                <div id="fee-alert" class="alert" style="display:none;"></div>
+                <div class="form-group">
+                    <label>Ставка (₽ за сделку)</label>
+                    <input type="number" id="service-fee" min="0" step="1" th:value="${user?.serviceFee}" placeholder="Например, 50000" />
+                </div>
+                <div class="form-group full">
+                    <button type="button" class="btn-submit" onclick="updateServiceFee()">Сохранить ставку</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card" id="settings-section">
+            <div class="profile-header">
+                <h2>Настройки пользователя</h2>
+            </div>
+            <div class="profile-body">
+                <div id="settings-alert" class="alert" style="display:none;"></div>
+                <div class="form-group">
+                    <label>Тема</label>
+                    <select id="settings-theme">
+                        <option value="light">Светлая</option>
+                        <option value="dark">Тёмная</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Локаль</label>
+                    <select id="settings-locale">
+                        <option value="ru-RU">ru-RU</option>
+                        <option value="en-US">en-US</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Формат чисел</label>
+                    <select id="settings-number-format">
+                        <option value="ru">ru (1 234 567,89)</option>
+                        <option value="en">en (1,234,567.89)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Размер страницы</label>
+                    <input type="number" id="settings-page-size" min="5" step="5" placeholder="Например, 20" />
+                </div>
+                <div class="form-group full">
+                    <label>Сохраненные фильтры (JSON)</label>
+                    <textarea id="settings-saved-filters" rows="4" placeholder='{"properties":{"type":"квартира"}}'></textarea>
+                </div>
+                <div class="form-group full">
+                    <button class="btn-submit" type="button" onclick="saveSettings()">Сохранить настройки</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function showAlert(message, type, alertId = 'password-alert') {
+            const el = document.getElementById(alertId);
+            el.textContent = message;
+            el.className = `alert ${type}`;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+        async function updatePhone() {
+            const phone = document.getElementById('new-phone').value;
+            if (!phone) {
+                showAlert('Введите номер телефона', 'error', 'phone-alert');
+                return;
+            }
+            try {
+                const res = await fetch('/v1/api/user/update-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    showAlert(data.message || 'Ошибка при обновлении телефона', 'error', 'phone-alert');
+                    return;
+                }
+                showAlert('Телефон успешно обновлен', 'success', 'phone-alert');
+                setTimeout(() => { location.reload(); }, 1000);
+            } catch (e) {
+                showAlert('Ошибка сети', 'error', 'phone-alert');
+            }
+        }
+        async function changePassword() {
+            const current = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirm = document.getElementById('confirm-password').value;
+            if (!current || !newPass || !confirm) {
+                showAlert('Заполните все поля', 'error');
+                return;
+            }
+            if (newPass !== confirm) {
+                showAlert('Новые пароли не совпадают', 'error');
+                return;
+            }
+            if (newPass.length < 3) {
+                showAlert('Пароль должен содержать минимум 3 символа', 'error');
+                return;
+            }
+            try {
+                const res = await fetch('/v1/api/user/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword: current, newPassword: newPass })
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    showAlert(data.message || 'Ошибка при изменении пароля', 'error');
+                    return;
+                }
+                showAlert('Пароль успешно изменен', 'success');
+                document.getElementById('current-password').value = '';
+                document.getElementById('new-password').value = '';
+                document.getElementById('confirm-password').value = '';
+            } catch (e) {
+                showAlert('Ошибка сети', 'error');
+            }
+        }
+
+        async function updatePassport() {
+            const seriesEl = document.getElementById('passport-series');
+            const numberEl = document.getElementById('passport-number');
+            const series = (seriesEl ? seriesEl.value : '').trim();
+            const number = (numberEl ? numberEl.value : '').trim();
+
+            if (series && !/^\d{4}$/.test(series)) {
+                showAlert('Серия должна состоять из 4 цифр', 'error', 'passport-alert');
+                return;
+            }
+            if (number && !/^\d{6}$/.test(number)) {
+                showAlert('Номер должен состоять из 6 цифр', 'error', 'passport-alert');
+                return;
+            }
+
+            try {
+                const res = await fetch('/v1/api/user/update-passport', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        passportSeries: series,
+                        passportNumber: number
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showAlert((data && data.message) || 'Ошибка при сохранении', 'error', 'passport-alert');
+                    return;
+                }
+                showAlert('Паспортные данные сохранены', 'success', 'passport-alert');
+            } catch (e) {
+                showAlert('Ошибка сети', 'error', 'passport-alert');
+            }
+        }
+
+        async function updateServiceFee() {
+            const feeInput = document.getElementById('service-fee');
+            const fee = (feeInput ? feeInput.value : '').trim();
+            try {
+                const res = await fetch('/v1/api/user/update-service-fee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serviceFee: fee })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    showAlert((data && data.message) || 'Ошибка при сохранении', 'error', 'fee-alert');
+                    return;
+                }
+                showAlert('Ставка сохранена', 'success', 'fee-alert');
+            } catch (e) {
+                showAlert('Ошибка сети', 'error', 'fee-alert');
+            }
+        }
+
+        // User settings load/save
+        async function loadSettings(){
+            try{
+                const res = await fetch('/v1/api/user-settings');
+                if(!res.ok) return;
+                const s = await res.json();
+                if (s){
+                    if (s.theme) document.getElementById('settings-theme').value = s.theme;
+                    if (s.locale) document.getElementById('settings-locale').value = s.locale;
+                    if (s.numberFormat) document.getElementById('settings-number-format').value = s.numberFormat;
+                    if (s.pageSize) document.getElementById('settings-page-size').value = s.pageSize;
+                    if (s.savedFilters) document.getElementById('settings-saved-filters').value = s.savedFilters;
+                }
+            } catch(e){ /* ignore */ }
+        }
+        async function saveSettings(){
+            try{
+                const payload = {
+                    theme: document.getElementById('settings-theme').value,
+                    locale: document.getElementById('settings-locale').value,
+                    numberFormat: document.getElementById('settings-number-format').value,
+                    pageSize: parseInt(document.getElementById('settings-page-size').value||'0')||null,
+                    savedFilters: document.getElementById('settings-saved-filters').value
+                };
+                const res = await fetch('/v1/api/user-settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+                if (!res.ok){ showAlert('Не удалось сохранить настройки','error','settings-alert'); return; }
+                showAlert('Настройки сохранены','success','settings-alert');
+            } catch(e){ showAlert('Ошибка сети','error','settings-alert'); }
+        }
+        document.addEventListener('DOMContentLoaded', loadSettings);
+    </script>
+</body>
+</html>

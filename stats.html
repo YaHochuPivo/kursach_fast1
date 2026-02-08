@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика продаж — RealEstate</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#ffffff; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+        .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+        .nav-links { display:flex; align-items:center; gap:10px; }
+        .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+        .nav-links a:hover { background:#eff6ff; }
+        .btn { display:inline-block; padding:8px 12px; border-radius:6px; text-decoration:none; font-weight:600; border:1px solid #dbeafe; background:#ffffff; color:#1e293b; }
+        .page-title { margin:20px 0 10px; font-size:24px; font-weight:700; color:#0f172a; }
+        .stats-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin:20px 0; }
+        .stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px; }
+        .stat-card h3 { margin:0 0 8px; font-size:14px; color:#64748b; font-weight:600; }
+        .stat-card .value { font-size:28px; font-weight:700; color:#0f172a; }
+        .stat-card .label { font-size:12px; color:#64748b; margin-top:4px; }
+        .chart-container { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:20px; margin:20px 0; }
+        .chart-title { margin:0 0 16px; font-size:18px; font-weight:700; color:#0f172a; }
+    </style>
+</head>
+<body>
+    <header class="container nav">
+        <div class="brand">
+            <div class="logo">🏠</div>
+            <div>RealEstate</div>
+        </div>
+        <div class="nav-links">
+            <a th:href="@{/}">Главная</a>
+            <a th:href="@{/properties}">Недвижимость</a>
+            <a th:href="@{/realtor/stats}" class="btn">Статистика 📊</a>
+            <a th:href="@{/user/profile}" class="btn">Профиль</a>
+            <a th:href="@{/logout}" class="btn">Выйти</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="page-title">Статистика продаж</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Всего сделок</h3>
+                <div class="value" id="totalDeals">0</div>
+                <div class="label">Все сделки</div>
+            </div>
+            <div class="stat-card">
+                <h3>Завершенные</h3>
+                <div class="value" id="completedDeals">0</div>
+                <div class="label">Успешно закрытые</div>
+            </div>
+            <div class="stat-card">
+                <h3>В ожидании</h3>
+                <div class="value" id="pendingDeals">0</div>
+                <div class="label">На рассмотрении</div>
+            </div>
+            <div class="stat-card">
+                <h3>Отмененные</h3>
+                <div class="value" id="cancelledDeals">0</div>
+                <div class="label">Отмененные сделки</div>
+            </div>
+            <div class="stat-card">
+                <h3>Общий доход</h3>
+                <div class="value" id="totalRevenue">0 ₽</div>
+                <div class="label">От завершенных сделок</div>
+            </div>
+            <div class="stat-card">
+                <h3>Активные объявления</h3>
+                <div class="value" id="activeProperties">0</div>
+                <div class="label">Всего объявлений</div>
+            </div>
+            <div class="stat-card">
+                <h3>Продвинутые</h3>
+                <div class="value" id="promotedProperties">0</div>
+                <div class="label">С продвижением</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2 class="chart-title">Продажи по месяцам</h2>
+            <canvas id="salesChart"></canvas>
+        </div>
+    </main>
+
+    <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/v1/api/realtor/stats');
+                if (!res.ok) {
+                    console.error('Ошибка загрузки статистики');
+                    return;
+                }
+                const data = await res.json();
+                
+                // Обновляем статистические карточки
+                document.getElementById('totalDeals').textContent = data.totalDeals || 0;
+                document.getElementById('completedDeals').textContent = data.completedDeals || 0;
+                document.getElementById('pendingDeals').textContent = data.pendingDeals || 0;
+                document.getElementById('cancelledDeals').textContent = data.cancelledDeals || 0;
+                document.getElementById('totalRevenue').textContent = new Intl.NumberFormat('ru-RU').format(data.totalRevenue || 0) + ' ₽';
+                document.getElementById('activeProperties').textContent = data.activeProperties || 0;
+                document.getElementById('promotedProperties').textContent = data.promotedProperties || 0;
+                
+                // Строим график
+                const monthlyStats = data.monthlyStats || {};
+                const months = Object.keys(monthlyStats).sort().reverse();
+                const counts = months.map(m => monthlyStats[m] || 0);
+                
+                const ctx = document.getElementById('salesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: months.map(m => {
+                            const [year, month] = m.split('-');
+                            const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+                            return monthNames[parseInt(month) - 1] + ' ' + year;
+                        }),
+                        datasets: [{
+                            label: 'Завершенные сделки',
+                            data: counts,
+                            backgroundColor: '#2563eb',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Ошибка при загрузке статистики:', e);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadStats);
+    </script>
+</body>
+</html>
+
