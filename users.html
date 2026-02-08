@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ — Пользователи</title>
+    <link rel="stylesheet" th:href="@{/styles.css}" href="/styles.css" />
+    <style>
+        body { margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f8fafc; color:#0f172a; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .tabs { display:flex; gap:10px; margin-bottom:16px; }
+        .tab { padding:10px 14px; border-radius:10px; background:#fff; border:1px solid #e2e8f0; text-decoration:none; color:#334155; }
+        .tab.active { background:#6366f1; color:#fff; border-color:#6366f1; }
+        table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+        th, td { padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; }
+        th { background:#f1f5f9; color:#334155; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="tabs">
+        <a th:href="@{/admin/dashboard}" class="tab">Панель</a>
+        <a th:href="@{/admin/users}" class="tab active">Пользователи</a>
+        <a th:href="@{/admin/properties}" class="tab">Объявления</a>
+        <a th:href="@{/admin/deals}" class="tab">Сделки</a>
+        <a th:href="@{/admin/reports}}" class="tab">Отчеты</a>
+        <a th:href="@{/admin/settings}" class="tab">Настройки</a>
+        <span style="margin-left:auto; color:#64748b;">Администратор: <span th:text="${username}">admin</span></span>
+    </div>
+
+    <h1 style="margin:0 0 12px;">Пользователи</h1>
+    <p style="margin:0 0 16px; color:#64748b;">Здесь появится список пользователей (упростим на данном этапе).</p>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Имя</th>
+            <th>Роль</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
