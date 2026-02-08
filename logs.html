@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ — Логи действий</title>
+  <style>
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    .nav { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #dbeafe; }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; color:#1e293b; }
+    .brand .logo { width:30px; height:30px; display:grid; place-items:center; border-radius:6px; background:#2563eb; color:#fff; font-size:16px; }
+    .nav-links { display:flex; align-items:center; gap:10px; }
+    .nav-links a { text-decoration:none; color:#1f2937; padding:6px 10px; border-radius:6px; }
+    .nav-links a:hover { background:#eff6ff; }
+    .title { font-weight:800; font-size:22px; margin:8px 0 16px; }
+    .filters { display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; margin-bottom:12px; }
+    .filters input, .filters select { padding:8px; border:1px solid #cbd5e1; border-radius:6px; }
+    .btn { padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#0f172a; text-decoration:none; font-weight:700; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px; border-bottom:1px solid #e2e8f0; text-align:left; font-size:14px; }
+    th { background:#f8fafc; color:#334155; }
+    .muted { color:#64748b; font-size:12px; }
+    .pagination { display:flex; gap:6px; margin-top:10px; }
+  </style>
+</head>
+<body>
+<header class="container nav">
+  <div class="brand">
+    <div class="logo">🔧</div>
+    <div>RealEstate — Admin</div>
+  </div>
+  <div class="nav-links">
+    <a href="/">Главная</a>
+    <a href="/properties">Недвижимость</a>
+    <a href="/deals">Мои сделки</a>
+    <a href="/chats">Чаты</a>
+    <a href="/user/profile">Профиль</a>
+  </div>
+</header>
+<div class="container">
+  <div class="title">Логи действий пользователей</div>
+
+  <div class="filters">
+    <input id="fEmail" type="text" placeholder="Email пользователя">
+    <select id="fAction">
+      <option value="">Все действия</option>
+      <option>PROPERTY_CREATE</option>
+      <option>PROPERTY_PROMOTE</option>
+      <option>PROPERTY_UNPROMOTE</option>
+      <option>FAVORITE_ADD</option>
+      <option>FAVORITE_REMOVE</option>
+      <option>DEAL_SENT</option>
+      <option>DEAL_ACCEPT</option>
+      <option>DEAL_DECLINE</option>
+      <option>BANK_REQUEST</option>
+      <option>BANK_STATUS_SET</option>
+      <option>MORTGAGE_APPLY</option>
+      <option>MORTGAGE_STATUS_SET</option>
+    </select>
+    <input id="fFrom" type="datetime-local" placeholder="От">
+    <input id="fTo" type="datetime-local" placeholder="До">
+    <div style="display:flex; gap:8px;">
+      <button class="btn" onclick="applyFilters()">Применить</button>
+      <button class="btn" onclick="resetFilters()">Сбросить</button>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Дата/время</th>
+        <th>Email</th>
+        <th>Действие</th>
+        <th>Сущность</th>
+        <th>ID</th>
+        <th>Детали</th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      <tr><td colspan="6" class="muted">Загрузка...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <button class="btn" onclick="prevPage()">‹ Назад</button>
+    <div class="muted" id="pageInfo">—</div>
+    <button class="btn" onclick="nextPage()">Вперёд ›</button>
+  </div>
+</div>
+
+<script>
+  let page = 0;
+  let size = 20;
+
+  function fmt(dt) {
+    try { return new Date(dt).toLocaleString(); } catch(e) { return dt; }
+  }
+
+  function buildQuery() {
+    const email = document.getElementById('fEmail').value.trim();
+    const action = document.getElementById('fAction').value;
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    const p = new URLSearchParams();
+    if (email) p.set('email', email);
+    if (action) p.set('action', action);
+    if (from) p.set('from', from);
+    if (to) p.set('to', to);
+    p.set('page', page);
+    p.set('size', size);
+    return p.toString();
+  }
+
+  async function load() {
+    const rows = document.getElementById('rows');
+    rows.innerHTML = '<tr><td colspan="6" class="muted">Загрузка...</td></tr>';
+    try {
+      const q = buildQuery();
+      const res = await fetch('/v1/api/admin/logs?' + q);
+      if (!res.ok) { rows.innerHTML = '<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>'; return; }
+      const data = await res.json();
+      const list = data.logs || [];
+      document.getElementById('pageInfo').textContent = `Стр. ${data.page+1} из ${data.totalPages || 1} (всего ${data.totalElements || list.length})`;
+      if (list.length === 0) { rows.innerHTML = '<tr><td colspan="6" class="muted">Нет данных</td></tr>'; return; }
+      rows.innerHTML = list.map(l => `
+        <tr>
+          <td>${fmt(l.createdAt)}</td>
+          <td>${l.userEmail || ''}</td>
+          <td>${l.action}</td>
+          <td>${l.entityType || ''}</td>
+          <td>${l.entityId != null ? l.entityId : ''}</td>
+          <td>${l.details ? l.details : ''}</td>
+        </tr>
+      `).join('');
+    } catch(e) {
+      rows.innerHTML = '<tr><td colspan="6" class="muted">Ошибка</td></tr>';
+    }
+  }
+
+  function applyFilters() { page = 0; load(); }
+  function resetFilters() {
+    document.getElementById('fEmail').value = '';
+    document.getElementById('fAction').value = '';
+    document.getElementById('fFrom').value = '';
+    document.getElementById('fTo').value = '';
+    page = 0;
+    load();
+  }
+  function prevPage() { if (page>0) { page--; load(); } }
+  function nextPage() { page++; load(); }
+
+  load();
+</script>
+</body>
+</html>
